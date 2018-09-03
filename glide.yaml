@@ -1,0 +1,38 @@
+package: github.com/IBM/power-openstack-k8s-volume-driver
+import:
+- package: github.com/golang/glog
+- package: github.com/gophercloud/gophercloud
+  version: d918bbefa18fa00bc7a30e3f5f9843f55af7280a
+  subpackages:
+  - openstack
+  - openstack/blockstorage/v3/volumes
+  - openstack/compute/v2/extensions/hypervisors
+  - openstack/compute/v2/extensions/volumeattach
+  - openstack/compute/v2/servers
+  - openstack/networking/v2/ports
+  - pagination
+- package: github.com/kubernetes-incubator/external-storage
+  version: 1.8.1
+  subpackages:
+  - lib/controller
+  - lib/util
+- package: github.com/op/go-logging
+  version: ^1.0.0
+- package: k8s.io/apimachinery
+  version: kubernetes-1.9.2
+  subpackages:
+  - pkg/api/resource
+  - pkg/apis/meta/v1
+  - pkg/util/net
+  - pkg/util/wait
+- package: k8s.io/client-go
+  version: kubernetes-1.9.2
+  subpackages:
+  - kubernetes
+  - rest
+- package: k8s.io/api
+  version: kubernetes-1.9.2
+- package: k8s.io/kubernetes
+  version: v1.9.2
+  subpackages:
+  - pkg/kubelet/apis
