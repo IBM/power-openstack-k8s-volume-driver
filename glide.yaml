@@ -36,3 +36,5 @@ import:
   version: v1.9.2
   subpackages:
   - pkg/kubelet/apis
+- package: github.com/nightlyone/lockfile
+  version: 6a197d5ea61168f2ac821de2b7f011b250904900

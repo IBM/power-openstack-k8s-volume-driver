@@ -1,5 +1,5 @@
 /*
-  Copyright IBM Corp. 2018.
+  Copyright IBM Corp. 2018, 2019.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package resources
 
 import (
 	"fmt"
+	"os"
 )
 
 // Constants
@@ -86,6 +87,7 @@ const (
 	PathPVMVIOS         = AttachedVolumeDir + DirNamePVMVIOS
 
 	CMDSudo                = "/usr/bin/sudo"
+	CMDLsBlk               = "/bin/lsblk"
 	CMDMkDir               = "/bin/mkdir"
 	CMDMkFS                = "/sbin/mkfs."
 	CMDMount               = "/bin/mount"
@@ -106,17 +108,27 @@ const (
 	URIProjects = "/v3/projects"
 
 	MaxAttemptsToFindVolume = 24
+	MaxAttemptsToTryLock    = 24
+	ScsiScanLock            = "power-openstack-k8s-scsiscan.lck"
 )
 
 var FlexPluginDriver, FlexPluginVendorDriver, ProvisionerNameOnly, ProvisionerName, GlobalMountsDir string
 
 // Utility to allow the caller to initialize the FlexVolume driver and provisioner to use a different naming scheme
 func UpdateDriverPrefix(prefix string) {
+	FlexPluginK8sDir := "/var/lib/kubelet/plugins"
+	FlexPluginOcpDir := "/var/lib/origin/openshift.local.volumes/plugins"
 	FlexPluginDriver = fmt.Sprintf("%s-volume-flex", prefix)
 	FlexPluginVendorDriver = FlexPluginVendor + "/" + FlexPluginDriver
 	ProvisionerNameOnly = fmt.Sprintf("%s-volume-provisioner", prefix)
 	ProvisionerName = FlexPluginVendor + "/" + ProvisionerNameOnly
-	GlobalMountsDir = fmt.Sprintf("/var/lib/kubelet/plugins/kubernetes.io/flexvolume/%s/%s/mounts/", FlexPluginVendor, FlexPluginDriver)
+	// If the generic Kubernetes Directory doesn't exist, check for other possible legacy directories
+	if _, err := os.Stat(FlexPluginK8sDir); os.IsNotExist(err) {
+		if _, err = os.Stat(FlexPluginOcpDir); !os.IsNotExist(err) {
+			FlexPluginK8sDir = FlexPluginOcpDir
+		}
+	}
+	GlobalMountsDir = fmt.Sprintf("%s/kubernetes.io/flexvolume/%s/%s/mounts/", FlexPluginK8sDir, FlexPluginVendor, FlexPluginDriver)
 }
 
 // We want to initialize the prefix to a generic name so that it can be used without being set

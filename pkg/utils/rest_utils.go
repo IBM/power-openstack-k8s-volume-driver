@@ -1,5 +1,5 @@
 /*
-  Copyright IBM Corp. 2018.
+  Copyright IBM Corp. 2018, 2019.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -445,9 +445,15 @@ func setCertificateOnClient(client *gophercloud.ProviderClient) {
 	config := &tls.Config{}
 	// If we were given a certificate file, use it, otherwise don't do validation
 	if certPath, ok := os.LookupEnv("OS_CACERT"); ok && certPath != "" {
-		caPool := x509.NewCertPool()
-		caPool.AppendCertsFromPEM(readCertificate(certPath))
-		config.RootCAs = caPool
+		certData := readCertificate(certPath)
+		// If the environment variable is set but the file is empty this also means don't use the certificate
+		if certData != nil && len(certData) > 0 {
+			caPool := x509.NewCertPool()
+			caPool.AppendCertsFromPEM(certData)
+			config.RootCAs = caPool
+		} else {
+			config.InsecureSkipVerify = true
+		}
 	} else {
 		config.InsecureSkipVerify = true
 	}

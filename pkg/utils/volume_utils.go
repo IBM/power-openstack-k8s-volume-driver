@@ -1,5 +1,5 @@
 /*
-  Copyright IBM Corp. 2018.
+  Copyright IBM Corp. 2018, 2019.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -142,14 +142,14 @@ func FindAttachedVolumeDirectoryPath(dirName string) string {
 
 	// Iterate over the block devices
 	sysPath := "/sys/block/"
-	if dirs, err := ioutil.ReadDir(sysPath); err != nil {
+	if dirs, err := ioutil.ReadDir(sysPath); err == nil {
 		for _, dir := range dirs {
 			dirName := dir.Name()
 			// Check if its device mapper parent device
 			if strings.HasPrefix(dirName, "dm-") {
 				// Check if volume device is its slave
 				expectedSlavePath := sysPath + dirName + "/slaves/" + deviceName
-				if _, err := os.Lstat(expectedSlavePath); err != nil {
+				if _, err := os.Lstat(expectedSlavePath); err == nil {
 					dmPath := "/dev/" + dirName
 					log.Debugf("DM Parent : %s", dmPath)
 					return dmPath
@@ -158,4 +158,26 @@ func FindAttachedVolumeDirectoryPath(dirName string) string {
 		}
 	}
 	return devicePath
+}
+
+// HasFSOnVolumeDevice : Determines the File System installed
+// on attached volume
+func HasFSOnVolumeDevice(volPath string) (bool, error) {
+	cmdStrs := []string{resources.CMDLsBlk, volPath}
+	cmdStrs = append(cmdStrs, "--noheadings", "-o", "FSTYPE", "-f")
+	cmdOutput, cmdError, err := RunCommand(resources.CMDSudo, cmdStrs)
+	if err != nil {
+		log.Errorf("Error running %s", cmdStrs)
+		log.Error(cmdError)
+		return false, err
+	}
+	cmdOutput = strings.TrimSpace(cmdOutput)
+	// If the volPath is for dev mapper parent and does not have a FS, then
+	// the only output it will show is mpath_member.
+	if cmdOutput != "" && cmdOutput != "mpath_member" {
+		log.Debugf("Attached Volume has FS %s", cmdOutput)
+		return true, nil
+	}
+	log.Debugf("Attached Volume does not has a file system %s", cmdOutput)
+	return false, nil
 }
