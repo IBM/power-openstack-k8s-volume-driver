@@ -1,5 +1,5 @@
 /*
-  Copyright IBM Corp. 2018.
+  Copyright IBM Corp. 2018, 2019.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
 package util
 
 import (
-	resources "github.com/IBM/power-openstack-k8s-volume-driver/pkg/resources"
 	"github.com/gophercloud/gophercloud"
 	volumes_v3 "github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/hypervisors"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	resources "github.com/IBM/power-openstack-k8s-volume-driver/pkg/resources"
 )
 
 /*

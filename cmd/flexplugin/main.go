@@ -1,5 +1,5 @@
 /*
-  Copyright IBM Corp. 2018.
+  Copyright IBM Corp. 2018, 2019.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nightlyone/lockfile"
 	resources "github.com/IBM/power-openstack-k8s-volume-driver/pkg/resources"
 	utils "github.com/IBM/power-openstack-k8s-volume-driver/pkg/utils"
 )
@@ -70,7 +71,13 @@ func isAttached(nodeName string, jsonArgs map[string]string) map[string]string {
 	// Check if volume is attached to VM
 	found, err := utils.IsVolumeAttached(cloud, vmID, volumeID)
 	if err != nil {
-		return utils.ErrorStruct(fmt.Sprintf("Unable to determine if volume is attached to VM. Error is %s", err))
+		//return utils.ErrorStruct(fmt.Sprintf("Unable to determine if volume is attached to VM. Error is %s", err))
+		log.Debugf("Could not find volume %s. Returning that its not attached", volumeID)
+		details = map[string]string{
+			"status":   resources.ResultStatusSuccess,
+			"msg":      resources.ResultMsgOpSuccess,
+			"attached": "false",
+		}
 	} else if found {
 		log.Debugf("Found volume %s attached to VM", volumeID)
 		details = map[string]string{
@@ -146,21 +153,43 @@ func attach(nodeName string, jsonArgs map[string]string) map[string]string {
 func waitForAttach(devicePath string, jsonArgs map[string]string) map[string]string {
 	log.Infof("\n waitForAttach called with %s %s", devicePath, jsonArgs)
 	var volPath string
+	var pID = os.Getpid()
 
 	// Get volume id from json params
 	volumeID := jsonArgs[resources.OsArgsVolID]
 	volPath = devicePath
+	lock, err := lockfile.New(filepath.Join(os.TempDir(), resources.ScsiScanLock))
+	if err != nil {
+		log.Debugf("%d : Cannot init lock. Reason : %v", pID, err)
+		return utils.ErrorStruct(fmt.Sprintf("Could not initialize lock file %s", err))
+	}
+	// Try to get the lock
+	for i := 0; i < resources.MaxAttemptsToTryLock; i++ {
+		err = lock.TryLock()
+		if err == nil {
+			break
+		}
+		log.Debugf("%d : Could not get lock, error is %v . Sleeping for 5 secs..", pID, err)
+		time.Sleep(5 * time.Second)
+	}
+	log.Debugf("%d : Got hold of Scsiscan lock", pID)
+
+	// defer unlock to end of function call
+	defer lock.Unlock()
+
 	// Loop for max of 120 seconds to find the attached volume
 	for i := 0; i < resources.MaxAttemptsToFindVolume; i++ {
-		// Sleep for 5 seconds
-		time.Sleep(5 * time.Second)
 		// Run scsi scan to discover the volume directory on VM
 		utils.ScsiHostScan()
+		// Sleep for a second before running udevadm
+		time.Sleep(1 * time.Second)
 		// Let udevd handle device events
-		err := utils.UdevdHandleEvents()
+		err := utils.UdevdHandleEvents(volPath)
 		if err != nil {
-			log.Warningf("There was error while at udevd. Error is %s", err)
+			log.Warningf("%d : There was error while at udevd. Error is %s", pID, err)
 		}
+		// Sleep for 2 seconds for letting udevadm handle the events
+		time.Sleep(4 * time.Second)
 		// Check if directory is available now after scan
 		if fileInfo, err := os.Lstat(volPath); err == nil {
 			// Find the symbolic link to the file
@@ -168,11 +197,11 @@ func waitForAttach(devicePath string, jsonArgs map[string]string) map[string]str
 				volDevicePath := utils.FindAttachedVolumeDirectoryPath(volPath)
 				// If the file was link and we failed to read the link, return failed status
 				if volDevicePath == "" {
-					log.Errorf("Error finding link %s", err)
+					log.Errorf("%d : Error finding link %s", pID, err)
 					return utils.ErrorStruct(fmt.Sprintf("Could not find symbolic link of attached volume with id %s. Error is %s", volumeID, err))
 				}
 
-				log.Debugf("Found directory of attached volume %s", volDevicePath)
+				log.Debugf("%d : Found directory of attached volume %s", pID, volDevicePath)
 				return map[string]string{
 					"status":     resources.ResultStatusSuccess,
 					"msg":        resources.ResultMsgOpSuccess,
@@ -190,26 +219,31 @@ func mountDevice(mountPath string, devicePath string, jsonArgs map[string]string
 	log.Infof("\n mountDevice called with %s %s", mountPath, jsonArgs)
 	fsType := jsonArgs[resources.K8sArgFSType]
 
-	// Create File system on directory of attached volume
-	if fsType == "" {
-		// Assume default
-		fsType = "ext4"
+	// Determine if attached volume has FS already on it
+	hasFS, _ := utils.HasFSOnVolumeDevice(devicePath)
+	// We should create FS only if there is no FS installed on volume
+	if !hasFS {
+		// Create File system on directory of attached volume
+		if fsType == "" {
+			// Assume default
+			fsType = "ext4"
+		}
+		cmdStrs := []string{resources.CMDMkFS + fsType, devicePath}
+		// We want to force the filesystem create if the command has the option, but very few actually do
+		if strings.HasPrefix(fsType, "ext") || strings.HasPrefix(fsType, "ntfs") {
+			cmdStrs = append(cmdStrs, "-F")
+		}
+		_, _, err := utils.RunCommand(resources.CMDSudo, cmdStrs)
+		if err != nil {
+			log.Errorf("Could not create file system on attached volume directory %s. Error is %s", devicePath, err)
+			return utils.ErrorStruct(fmt.Sprintf("Could not create file system on attached volume directory %s. Error is %s", devicePath, err))
+		}
+		log.Debugf("Created %s file system at %s", fsType, devicePath)
 	}
-	cmdStrs := []string{resources.CMDMkFS + fsType, devicePath}
-	// We want to force the filesystem create if the command has the option, but very few actually do
-	if strings.HasPrefix(fsType, "ext") || strings.HasPrefix(fsType, "ntfs") {
-		cmdStrs = append(cmdStrs, "-F")
-	}
-	err := utils.RunCommand(resources.CMDSudo, cmdStrs)
-	if err != nil {
-		log.Errorf("Could not create file system on attached volume directory %s. Error is %s", devicePath, err)
-		return utils.ErrorStruct(fmt.Sprintf("Could not create file system on attached volume directory %s. Error is %s", devicePath, err))
-	}
-	log.Debugf("Created %s file system at %s", fsType, devicePath)
 
 	// Create mount directory as specified by mountPath
-	cmdStrs = []string{resources.CMDMkDir, "-p", mountPath}
-	err = utils.RunCommand(resources.CMDSudo, cmdStrs)
+	cmdStrs := []string{resources.CMDMkDir, "-p", mountPath}
+	_, _, err := utils.RunCommand(resources.CMDSudo, cmdStrs)
 	if err != nil {
 		log.Errorf("Could not create directory %s to mount attached volume", mountPath)
 		return utils.ErrorStruct(fmt.Sprintf("Could not create directory %s to mount attached volume. Error is %s", mountPath, err))
@@ -224,7 +258,7 @@ func mountDevice(mountPath string, devicePath string, jsonArgs map[string]string
 	if jsonArgs[resources.K8sArgMountRW] == "ro" || jsonArgs[resources.OsArgsMountRW] == "ro" {
 		cmdStrs = []string{resources.CMDMount, "-r", devicePath, mountPath}
 	}
-	err = utils.RunCommand(resources.CMDSudo, cmdStrs)
+	_, _, err = utils.RunCommand(resources.CMDSudo, cmdStrs)
 	if err != nil {
 		log.Errorf("Could not mount %s directory to mount path %s", devicePath, mountPath)
 		return utils.ErrorStruct(fmt.Sprintf("Could not mount %s directory to mount path %s. Error is %s", devicePath, mountPath, err))
@@ -245,7 +279,7 @@ func mount(mountDir string, jsonArgs map[string]string) map[string]string {
 
 	// Create pod mount directory
 	cmdStrs := []string{resources.CMDMkDir, "-p", mountDir}
-	err := utils.RunCommand(resources.CMDSudo, cmdStrs)
+	_, _, err := utils.RunCommand(resources.CMDSudo, cmdStrs)
 	if err != nil {
 		log.Errorf("Could not create directory %s to mount attached volume", mountDir)
 		return utils.ErrorStruct(fmt.Sprintf("Could not create directory %s to mount attached volume. Error is %s", mountDir, err))
@@ -253,7 +287,7 @@ func mount(mountDir string, jsonArgs map[string]string) map[string]string {
 
 	// Bind mount
 	cmdStrs = []string{resources.CMDMount, "--bind", volumeMountDir, mountDir}
-	err = utils.RunCommand(resources.CMDSudo, cmdStrs)
+	_, _, err = utils.RunCommand(resources.CMDSudo, cmdStrs)
 	if err != nil {
 		log.Errorf("Could not bind mount %s on %s. Error is %s", volumeMountDir, mountDir, err)
 		return utils.ErrorStruct(fmt.Sprintf("Could not bind mount %s on %s. Error is %s", volumeMountDir, mountDir, err))
@@ -322,7 +356,7 @@ func waitForDetach(devicePath string) map[string]string {
 func unmountDevice(mountPath string) map[string]string {
 	log.Infof("\n unmountDevice called with %s", mountPath)
 	cmdStrs := []string{resources.CMDUnmount, mountPath}
-	err := utils.RunCommand(resources.CMDSudo, cmdStrs)
+	_, _, err := utils.RunCommand(resources.CMDSudo, cmdStrs)
 
 	if err != nil {
 		log.Errorf("Could not unmount volume directory %s. Error is %s", mountPath, err)
@@ -339,7 +373,7 @@ func unmountDevice(mountPath string) map[string]string {
 func unmount(mountDir string) map[string]string {
 	log.Infof("\n unmount called with %s", mountDir)
 	cmdStrs := []string{resources.CMDUnmount, mountDir}
-	err := utils.RunCommand(resources.CMDSudo, cmdStrs)
+	_, _, err := utils.RunCommand(resources.CMDSudo, cmdStrs)
 	if err != nil {
 		log.Errorf("Could not unmount volume directory %s. Error is %s", mountDir, err)
 		return utils.ErrorStruct(fmt.Sprintf("Could not unmount volume directory %s. Error is %s", mountDir, err))

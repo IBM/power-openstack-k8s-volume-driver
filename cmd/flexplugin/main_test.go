@@ -1,5 +1,5 @@
 /*
-  Copyright IBM Corp. 2018.
+  Copyright IBM Corp. 2018, 2019.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -92,7 +92,9 @@ func TestMountDevice(t *testing.T) {
 	if result["status"] != resources.ResultStatusSuccess {
 		t.Errorf("Expected mountdevice to be successful, but got %s", result["msg"])
 	}
-	expectedCmdsRun := []string{resources.CMDMkFS + "ext4", devicePath, "-F",
+	expectedCmdsRun := []string{
+		resources.CMDLsBlk, devicePath, "--noheadings", "-o", "FSTYPE", "-f",
+		resources.CMDMkFS + "ext4", devicePath, "-F",
 		resources.CMDMkDir, "-p", mountPath,
 		resources.CMDMount, devicePath, mountPath,
 	}

@@ -1,5 +1,5 @@
 /*
-  Copyright IBM Corp. 2018.
+  Copyright IBM Corp. 2018, 2019.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -287,29 +287,37 @@ func ScsiHostScan() {
 }
 
 // UdevdHandleEvents : Indicate udevd to handle device creation and deletion events
-func UdevdHandleEvents() error {
+func UdevdHandleEvents(volPath string) error {
 	cmdStrs := []string{resources.CMDUdevAdm, resources.CMDUdevAdmParamSettle}
-	err := RunCommand(resources.CMDSudo, cmdStrs)
+	_, _, err := RunCommand(resources.CMDSudo, cmdStrs)
 	if err != nil {
 		log.Errorf("Error running %s", cmdStrs)
 		return err
 	}
+	log.Debug("Ran command udevadm settle")
 	cmdStrs = []string{resources.CMDUdevAdm, resources.CMDUdevAdmParamTrigger}
-	err = RunCommand(resources.CMDSudo, cmdStrs)
+	// If the directory of attached volume exists, we should run trigger only for that path
+	if _, err = os.Stat(volPath); !os.IsNotExist(err) {
+		log.Debugf("Found directory for attached volume %s", volPath)
+		cmdStrs = []string{resources.CMDUdevAdm, resources.CMDUdevAdmParamTrigger, volPath}
+	}
+	_, _, err = RunCommand(resources.CMDSudo, cmdStrs)
 	if err != nil {
 		log.Errorf("Error running %s", cmdStrs)
 		return err
 	}
+	log.Debugf("Ran command udevadm trigger")
 	return nil
 }
 
 // RunCommand : Run shell command
-func RunCommand(cmdStr string, cmdArgs []string) error {
+func RunCommand(cmdStr string, cmdArgs []string) (string, string, error) {
 	cmd := ExecCommand(cmdStr, cmdArgs...)
-	var cmdOutput bytes.Buffer
+	var cmdOutput, cmdError bytes.Buffer
 	cmd.Stdout = &cmdOutput
+	cmd.Stderr = &cmdError
 	err := cmd.Run()
-	return err
+	return cmdOutput.String(), cmdError.String(), err
 }
 
 // SetupLogging : Sets up logging for the driver

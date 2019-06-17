@@ -269,4 +269,6 @@ imports:
   - pkg/util/goroutinemap
   - pkg/util/goroutinemap/exponentialbackoff
   - pkg/util/version
+- name: github.com/nightlyone/lockfile
+  version: 6a197d5ea61168f2ac821de2b7f011b250904900
 testImports: []

@@ -1,4 +1,4 @@
-# Copyright IBM Corp. 2018.
+# Copyright IBM Corp. 2018, 2019.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 #  limitations under the License.
 
 IMAGE_REPO = ibmcom
-DRIVER_VERSION := 1.0.0
+DRIVER_VERSION := 1.0.1
 OS_ARCH = $(shell uname -p)
 DRIVER_PREFIX := power-openstack-k8s
 IMAGE_FLEXPLUGIN = $(DRIVER_PREFIX)-volume-flex
