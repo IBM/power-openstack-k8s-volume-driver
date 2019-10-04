@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/nightlyone/lockfile"
-	resources "github.com/IBM/power-openstack-k8s-volume-driver/pkg/resources"
-	utils "github.com/IBM/power-openstack-k8s-volume-driver/pkg/utils"
+	resources "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/resources"
+	utils "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/utils"
 )
 
 // Map to hold the operation to its allowed operation params
@@ -43,6 +43,7 @@ var cloud utils.OpenstackCloudI
 func driverInit() map[string]bool {
 	log.Info("\n Init called")
 	details := map[string]bool{"attach": true}
+	log.Infof("Global mounts directory set to %s", resources.GlobalMountsDir)
 	return details
 }
 
@@ -258,8 +259,25 @@ func mountDevice(mountPath string, devicePath string, jsonArgs map[string]string
 	if jsonArgs[resources.K8sArgMountRW] == "ro" || jsonArgs[resources.OsArgsMountRW] == "ro" {
 		cmdStrs = []string{resources.CMDMount, "-r", devicePath, mountPath}
 	}
-	_, _, err = utils.RunCommand(resources.CMDSudo, cmdStrs)
+	cmdOut, cmdErr, err := utils.RunCommand(resources.CMDSudo, cmdStrs)
 	if err != nil {
+		// Check if the flie system is bad
+		if (cmdOut != "" && strings.Contains(cmdOut, "bad superblock")) ||
+			(cmdErr != "" && strings.Contains(cmdErr, "bad superblock")) {
+			log.Debugf("Corrupted file system found. Creating file system again..")
+			cmdStrs := []string{resources.CMDMkFS + fsType, devicePath}
+			// We want to force the filesystem create if the command has the option, but very few actually do
+			if strings.HasPrefix(fsType, "ext") || strings.HasPrefix(fsType, "ntfs") {
+				cmdStrs = append(cmdStrs, "-F")
+			}
+			_, _, err := utils.RunCommand(resources.CMDSudo, cmdStrs)
+			if err != nil {
+				// Still can not create.. return error
+				log.Errorf("Could not create file system on attached volume directory %s. Error is %s", devicePath, err)
+				return utils.ErrorStruct(fmt.Sprintf("Could not create file system on attached volume directory %s. Error is %s", devicePath, err))
+			}
+			log.Debugf("Created %s file system at %s", fsType, devicePath)
+		}
 		log.Errorf("Could not mount %s directory to mount path %s", devicePath, mountPath)
 		return utils.ErrorStruct(fmt.Sprintf("Could not mount %s directory to mount path %s. Error is %s", devicePath, mountPath, err))
 	}
@@ -355,13 +373,32 @@ func waitForDetach(devicePath string) map[string]string {
 // Implements <driver> unmount_device mount_dir API
 func unmountDevice(mountPath string) map[string]string {
 	log.Infof("\n unmountDevice called with %s", mountPath)
+	// First, find out all the block devices and multipath devices
+	// which are associated with this mount directory
+	var dmParent string
+	var devices []string
+	devicePath, _ := utils.GetDeviceOfMount(mountPath)
+	if devicePath != "" {
+		dmParent, devices, _ = utils.GetAssociatedBlockDevices(devicePath)
+	}
+	// Now unmount the directory from the device
 	cmdStrs := []string{resources.CMDUnmount, mountPath}
 	_, _, err := utils.RunCommand(resources.CMDSudo, cmdStrs)
-
 	if err != nil {
 		log.Errorf("Could not unmount volume directory %s. Error is %s", mountPath, err)
 		return utils.ErrorStruct(fmt.Sprintf("Could not unmount volume directory %s. Error is %s", mountPath, err))
 	}
+	// Now that directory is unmounted, remove the block device which was associated with the mountPath
+	if devices != nil && len(devices) >= 1 {
+		for _, device := range devices {
+			utils.DeleteScsiDevice(device)
+		}
+	}
+	// Clear out the multipath entry too as part of device cleanup
+	if dmParent != "" {
+		utils.RemoveMultipathForDevice(devicePath)
+	}
+	// Return finally with success message
 	details := map[string]string{
 		"status": resources.ResultStatusSuccess,
 		"msg":    resources.ResultMsgOpSuccess,

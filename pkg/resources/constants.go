@@ -92,6 +92,8 @@ const (
 	CMDMkFS                = "/sbin/mkfs."
 	CMDMount               = "/bin/mount"
 	CMDUnmount             = "/bin/umount"
+	CMDGrep                = "/bin/grep"
+	CMDMultipath           = "/usr/sbin/multipath"
 	CMDUdevAdm             = "/sbin/udevadm"
 	CMDUdevAdmParamSettle  = "settle"
 	CMDUdevAdmParamTrigger = "trigger"
@@ -112,6 +114,9 @@ const (
 	ScsiScanLock            = "power-openstack-k8s-scsiscan.lck"
 )
 
+// FSTYPES : All linux file systems
+var FSTYPES = []string{"ext2", "ext3", "ext4", "jfs", "ReiserFS", "XFS", "Btrfs"}
+
 var FlexPluginDriver, FlexPluginVendorDriver, ProvisionerNameOnly, ProvisionerName, GlobalMountsDir string
 
 // Utility to allow the caller to initialize the FlexVolume driver and provisioner to use a different naming scheme
@@ -125,6 +130,11 @@ func UpdateDriverPrefix(prefix string) {
 	// If the generic Kubernetes Directory doesn't exist, check for other possible legacy directories
 	if _, err := os.Stat(FlexPluginK8sDir); os.IsNotExist(err) {
 		if _, err = os.Stat(FlexPluginOcpDir); !os.IsNotExist(err) {
+			FlexPluginK8sDir = FlexPluginOcpDir
+		}
+	} else {
+		// ICP can now be configured on OCP. In that case use OCP global mounts directory as pods will use these now
+		if _, err := os.Stat(FlexPluginOcpDir); !os.IsNotExist(err) {
 			FlexPluginK8sDir = FlexPluginOcpDir
 		}
 	}

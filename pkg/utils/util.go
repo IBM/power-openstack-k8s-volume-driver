@@ -18,15 +18,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 
-	resources "github.com/IBM/power-openstack-k8s-volume-driver/pkg/resources"
+	resources "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/resources"
 
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/hypervisors"
 	logging "github.com/op/go-logging"
 )
 
@@ -196,7 +195,7 @@ func CreateVMIDToIPMap(cloud OpenstackCloudI) (map[string][]string, error) {
 	} else if err != nil {
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("%s", vms))
+	log.Debug(fmt.Sprintf("%v", vms))
 	vmIDToIPs := make(map[string][]string)
 	for ipAddr, vm := range vms {
 		vmIDToIPs[vm.ID] = []string{ipAddr}
@@ -233,22 +232,22 @@ func CreateVMIPToVMDetailsMap(cloud OpenstackCloudI) (map[string](resources.OSSe
 }
 
 // CreateHostnameToDetailsMap : Creates map of hypervisor hostname to host details map
-func CreateHostnameToDetailsMap(cloud OpenstackCloudI) (map[string](*hypervisors.Hypervisor), error) {
-	hosts, err := cloud.ListHypervisors()
+func CreateHostnameToDetailsMap(cloud OpenstackCloudI) (map[string](*resources.Hypervisor), error) {
+	hosts, err := cloud.GetHypervisors()
 	if err != nil {
 		return nil, err
 	}
-	hostMap := make(map[string]*hypervisors.Hypervisor)
+	hostMap := make(map[string]*resources.Hypervisor)
 	for _, host := range *hosts {
 		// Copy the structure into new one
-		hyp := hypervisors.Hypervisor(host)
+		hyp := resources.Hypervisor(host)
 		hostMap[host.HypervisorHostname] = &hyp
 	}
-	log.Debug(fmt.Sprintf("%s", hostMap))
+	log.Debug(fmt.Sprintf("%v", hostMap))
 	return hostMap, nil
 }
 
-// resolveNodeAddress : Converts the Node Name to an IP Address if not already
+// ResolveNodeAddress : Converts the Node Name to an IP Address if not already
 func ResolveNodeAddress(nodeName string) string {
 	// If the nodeName is already an IP Address then we can just return it
 	if net.ParseIP(nodeName) != nil {
@@ -269,55 +268,40 @@ func ResolveNodeAddress(nodeName string) string {
 	return ""
 }
 
-// ScsiHostScan : Function rescans the scsi bus
-func ScsiHostScan() {
-	scsiPath := resources.ScsiPath
-	if dirs, err := ioutil.ReadDir(scsiPath); err == nil {
-		for _, f := range dirs {
-			name := scsiPath + f.Name() + "/scan"
-			data := []byte("- - -")
-			err := ioutil.WriteFile(name, data, 0666)
-			if err != nil {
-				log.Warningf("Could not rescan file %s", name)
-			}
-			Log.Debugf("Scsi scan done for file %s", f.Name())
-		}
-		Log.Debug("Scsi scan done")
-	}
-}
-
-// UdevdHandleEvents : Indicate udevd to handle device creation and deletion events
-func UdevdHandleEvents(volPath string) error {
-	cmdStrs := []string{resources.CMDUdevAdm, resources.CMDUdevAdmParamSettle}
-	_, _, err := RunCommand(resources.CMDSudo, cmdStrs)
-	if err != nil {
-		log.Errorf("Error running %s", cmdStrs)
-		return err
-	}
-	log.Debug("Ran command udevadm settle")
-	cmdStrs = []string{resources.CMDUdevAdm, resources.CMDUdevAdmParamTrigger}
-	// If the directory of attached volume exists, we should run trigger only for that path
-	if _, err = os.Stat(volPath); !os.IsNotExist(err) {
-		log.Debugf("Found directory for attached volume %s", volPath)
-		cmdStrs = []string{resources.CMDUdevAdm, resources.CMDUdevAdmParamTrigger, volPath}
-	}
-	_, _, err = RunCommand(resources.CMDSudo, cmdStrs)
-	if err != nil {
-		log.Errorf("Error running %s", cmdStrs)
-		return err
-	}
-	log.Debugf("Ran command udevadm trigger")
-	return nil
-}
-
 // RunCommand : Run shell command
 func RunCommand(cmdStr string, cmdArgs []string) (string, string, error) {
+	Log.Debugf("Running command %s %s", cmdStr, cmdArgs)
 	cmd := ExecCommand(cmdStr, cmdArgs...)
 	var cmdOutput, cmdError bytes.Buffer
 	cmd.Stdout = &cmdOutput
 	cmd.Stderr = &cmdError
 	err := cmd.Run()
+	Log.Debugf("Command output %s %s", cmdOutput.String(), cmdError.String())
 	return cmdOutput.String(), cmdError.String(), err
+}
+
+// RunPipedCommands : Run cmd1 | cmd2 on OS
+func RunPipedCommands(cmd1 string, cmd1Args []string, cmd2 string, cmd2Args []string) (string, string) {
+	Log.Debugf("Running command %s %s | %s %s", cmd1, cmd1Args, cmd2, cmd2Args)
+	c1 := ExecCommand(cmd1, cmd1Args...)
+	c2 := ExecCommand(cmd2, cmd2Args...)
+	rPipe, wPipe := io.Pipe()
+	c1.Stdout = wPipe
+	c2.Stdin = rPipe
+
+	var cmdOutput, cmdError bytes.Buffer
+	c2.Stdout = &cmdOutput
+	c2.Stderr = &cmdError
+
+	c1.Start()
+	c2.Start()
+	c1.Wait()
+	wPipe.Close()
+	c2.Wait()
+	// io.Copy(os.Stdout, &cmdOutput)
+	// io.Copy(os.Stderr, &cmdError)
+
+	return cmdOutput.String(), cmdError.String()
 }
 
 // SetupLogging : Sets up logging for the driver

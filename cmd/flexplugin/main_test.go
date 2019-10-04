@@ -21,8 +21,8 @@ import (
 	"strconv"
 	"testing"
 
-	resources "github.com/IBM/power-openstack-k8s-volume-driver/pkg/resources"
-	utils "github.com/IBM/power-openstack-k8s-volume-driver/pkg/utils"
+	resources "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/resources"
+	utils "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/utils"
 )
 
 const getVolumeByNameJSONArgs = `{"kubernetes.io/fsType":"ext4","kubernetes.io/pvOrVolumeName":"vol_1","kubernetes.io/readwrite":"rw","volumeID":"vol_1"}`
@@ -147,9 +147,11 @@ func TestUnmountDevice(t *testing.T) {
 	cmdsExecuted = []string{}
 	result := unmountDevice(mountPath)
 	if result["status"] != resources.ResultStatusSuccess {
-		t.Errorf("Expected mountdevice to be successful, but got %s", result["msg"])
+		t.Errorf("Expected unmountdevice to be successful, but got %s", result["msg"])
 	}
-	expectedCmdsRun := []string{resources.CMDUnmount, mountPath}
+	expectedCmdsRun := []string{
+		resources.CMDMount, "-w", mountPath,
+		resources.CMDUnmount, mountPath}
 	for i, c := range expectedCmdsRun {
 		if c != cmdsExecuted[i] {
 			t.Errorf("Expected %s to run", cmdsExecuted[i])
@@ -161,7 +163,7 @@ func TestUnmountDevice(t *testing.T) {
 	cmdExitStatus = -1
 	result = unmountDevice(mountPath)
 	if result["status"] != resources.ResultStatusFailed {
-		t.Errorf("Expected mountdevice to fail, but got %s", result["msg"])
+		t.Errorf("Expected unmountdevice to fail, but got %s", result["msg"])
 	}
 }
 

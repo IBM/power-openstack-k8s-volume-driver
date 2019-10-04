@@ -1,5 +1,5 @@
 /*
-  Copyright IBM Corp. 2018.
+  Copyright IBM Corp. 2018, 2019.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -44,6 +44,49 @@ type StorageRegistration struct {
 	HostType    string `json:"host_type"`
 	DriverType  string `json:"driver_volume_type"`
 	AccessState string `json:"access_state"`
+}
+
+// Hypervisor : Structure representing hypervisor
+type Hypervisor struct {
+
+	// Status of the hypervisor, either "enabled" or "disabled".
+	Status string `json:"status"`
+
+	// State of the hypervisor, either "up" or "down".
+	State string `json:"state"`
+
+	// HostIP is the hypervisor's IP address.
+	HostIP string `json:"host_ip"`
+
+	// FreeRAMMB is the free RAM in the hypervisor, measured in MB.
+	FreeRamMB int `json:"free_ram_mb"`
+
+	// HypervisorHostname is the hostname of the hypervisor.
+	HypervisorHostname string `json:"hypervisor_hostname"`
+
+	// HypervisorType is the type of hypervisor.
+	HypervisorType string `json:"hypervisor_type"`
+
+	// HypervisorVersion is the version of the hypervisor.
+	HypervisorVersion int `json:"-"`
+
+	// ID is the unique ID of the hypervisor.
+	ID int `json:"id"`
+
+	// MemoryMB is the total memory of the hypervisor, measured in MB.
+	MemoryMB int `json:"memory_mb"`
+
+	// MemoryMBUsed is the used memory of the hypervisor, measured in MB.
+	MemoryMBUsed int `json:"memory_mb_used"`
+
+	// RunningVMs is the The number of running vms on the hypervisor.
+	RunningVMs int `json:"running_vms"`
+
+	// VCPUs is the total number of vcpus on the hypervisor.
+	VCPUs int `json:"vcpus"`
+
+	// VCPUsUsed is the number of used vcpus on the hypervisor.
+	VCPUsUsed int `json:"vcpus_used"`
 }
 
 // OSServerAttrsExt : Extension to base Server object
