@@ -24,7 +24,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	resources "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/resources"
+	resources "github.com/IBM/power-openstack-k8s-volume-driver/pkg/resources"
 
 	logging "github.com/op/go-logging"
 )

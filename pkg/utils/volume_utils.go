@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	resources "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/resources"
+	resources "github.com/IBM/power-openstack-k8s-volume-driver/pkg/resources"
 )
 
 // GetVolumeDirectoryName : Given VM IP and volume ID, this function determines the directory name

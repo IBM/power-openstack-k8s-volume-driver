@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
+	resources "github.com/IBM//power-openstack-k8s-volume-driver/pkg/resources"
+	utils "github.com/IBM//power-openstack-k8s-volume-driver/pkg/utils"
 	"github.com/nightlyone/lockfile"
-	resources "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/resources"
-	utils "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/utils"
 )
 
 // Map to hold the operation to its allowed operation params

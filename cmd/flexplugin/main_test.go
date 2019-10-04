@@ -21,8 +21,8 @@ import (
 	"strconv"
 	"testing"
 
-	resources "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/resources"
-	utils "github.ibm.com/powercloud/power-openstack-k8s-volume-driver/pkg/utils"
+	resources "github.com/IBM/power-openstack-k8s-volume-driver/pkg/resources"
+	utils "github.com/IBM/power-openstack-k8s-volume-driver/pkg/utils"
 )
 
 const getVolumeByNameJSONArgs = `{"kubernetes.io/fsType":"ext4","kubernetes.io/pvOrVolumeName":"vol_1","kubernetes.io/readwrite":"rw","volumeID":"vol_1"}`
