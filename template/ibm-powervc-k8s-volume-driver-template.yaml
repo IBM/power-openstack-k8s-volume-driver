@@ -13,260 +13,260 @@ metadata:
     iconClass: "icon-openstack"
 message: "The IBM PowerVC FlexVolume driver is now ready to provision and attach volumes using the PowerVC management server at \"https://${OPENSTACK_IP_OR_HOSTNAME}:5000/v3/\".\n\nYou can use any storage class that specifies the \"ibm/powervc-k8s-volume-provisioner\" provisioner in persistent volume claims, including the pre-defined storage class \"ibm-powervc-k8s-volume-default\" that has been created."
 objects:
-- kind: ConfigMap
-  apiVersion: v1
-  metadata:
-    name: ibm-powervc-config
-    labels:
-      app: ibm-powervc-k8s-volume-driver
-      chart: ibm-powervc-k8s-volume-driver-1.1.0
-  data:
-     OS_AUTH_URL: "https://${OPENSTACK_IP_OR_HOSTNAME}:5000/v3/"
-     OS_DOMAIN_NAME: ${OPENSTACK_DOMAIN_NAME}
-     OS_PROJECT_NAME: ${OPENSTACK_PROJECT_NAME}
-     OS_CACERT_DATA: "${OPENSTACK_CERT_DATA}"
-- kind: StorageClass
-  apiVersion: storage.k8s.io/v1
-  metadata:
-    name: ibm-powervc-k8s-volume-default
-    labels:
-      app: ibm-powervc-k8s-volume-driver
-      chart: ibm-powervc-k8s-volume-driver-1.1.0
-    annotations:
-      storageclass.kubernetes.io/is-default-class: "${DRIVER_DFLT_STG_CLASS}"
-  parameters:
-    type: "${DRIVER_VOLUME_TYPE}"
-  provisioner: ibm/powervc-k8s-volume-provisioner
-- kind: Deployment
-  apiVersion: apps/v1beta2
-  metadata:
-    name: ibm-powervc-k8s-volume-provisioner
-    labels:
-      app: ibm-powervc-k8s-volume-provisioner
-      chart: ibm-powervc-k8s-volume-driver-1.1.0
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: ibm-powervc-config
+      labels:
+        app: ibm-powervc-k8s-volume-driver
+        chart: ibm-powervc-k8s-volume-driver-1.1.0
+    data:
+      OS_AUTH_URL: "https://${OPENSTACK_IP_OR_HOSTNAME}:5000/v3/"
+      OS_DOMAIN_NAME: ${OPENSTACK_DOMAIN_NAME}
+      OS_PROJECT_NAME: ${OPENSTACK_PROJECT_NAME}
+      OS_CACERT_DATA: "${OPENSTACK_CERT_DATA}"
+  - kind: StorageClass
+    apiVersion: storage.k8s.io/v1
+    metadata:
+      name: ibm-powervc-k8s-volume-default
+      labels:
+        app: ibm-powervc-k8s-volume-driver
+        chart: ibm-powervc-k8s-volume-driver-1.1.0
+      annotations:
+        storageclass.kubernetes.io/is-default-class: "${DRIVER_DFLT_STG_CLASS}"
+    parameters:
+      type: "${DRIVER_VOLUME_TYPE}"
+    provisioner: ibm/powervc-k8s-volume-provisioner
+  - kind: Deployment
+    apiVersion: apps/v1beta2
+    metadata:
+      name: ibm-powervc-k8s-volume-provisioner
+      labels:
         app: ibm-powervc-k8s-volume-provisioner
-    template:
-      metadata:
-        labels:
+        chart: ibm-powervc-k8s-volume-driver-1.1.0
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
           app: ibm-powervc-k8s-volume-provisioner
-          chart: ibm-powervc-k8s-volume-driver-1.1.0
-        annotations:
-          productName: ibm-powervc-k8s-volume-driver
-          productID: ibm-powervc-k8s-volume-driver_1.1.0_apache_00000
-          productVersion: 1.1.0
-      spec:
-        hostPID: false
-        hostIPC: false
-        hostNetwork: false
-        nodeSelector:
-          node-role.kubernetes.io/master: "true"
-        tolerations:
-        - key: dedicated
-          operator: Exists
-          effect: NoSchedule
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: beta.kubernetes.io/arch
-                  operator: In
-                  values:
-                  - ppc64le
-                  - amd64
-        serviceAccountName: ${SECURITY_SERVICE_ACCOUNT_NAME}
-        containers:
-        - name: ibm-powervc-k8s-volume-provisioner
-          image: ${IMAGE_PROVISIONER_REPO}:${IMAGE_PROVISIONER_TAG}
-          imagePullPolicy: ${IMAGE_PROVISIONER_PULL}
-          args:
-          - "-prefix=powervc-k8s"
-          envFrom:
-          - configMapRef:
-              name: ibm-powervc-config
-          - secretRef:
-              name: ${OPENSTACK_CRED_SECRET_NAME}
-          env:
-          - name: OS_CACERT
-            value: /etc/config/openstack.crt
-          volumeMounts:
-          - name: powervc-config
-            mountPath: /etc/config
-          securityContext:
-            capabilities:
-              drop:
-              - all
-              add: []
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
-            runAsNonRoot: false
-            privileged: false
-        volumes:
-        - name: powervc-config
-          configMap:
-            name: ibm-powervc-config
-            items:
-            - key: OS_CACERT_DATA
-              path: openstack.crt
-- kind: DaemonSet
-  apiVersion: apps/v1beta2
-  metadata:
-    name: ibm-powervc-k8s-volume-flex
-    labels:
-      app: ibm-powervc-k8s-volume-flex
-      chart: ibm-powervc-k8s-volume-driver-1.1.0
-  spec:
-    selector:
-      matchLabels:
+      template:
+        metadata:
+          labels:
+            app: ibm-powervc-k8s-volume-provisioner
+            chart: ibm-powervc-k8s-volume-driver-1.1.0
+          annotations:
+            productName: ibm-powervc-k8s-volume-driver
+            productID: ibm-powervc-k8s-volume-driver_1.1.0_apache_00000
+            productVersion: 1.1.0
+        spec:
+          hostPID: false
+          hostIPC: false
+          hostNetwork: false
+          nodeSelector:
+            node-role.kubernetes.io/master: "true"
+          tolerations:
+            - key: dedicated
+              operator: Exists
+              effect: NoSchedule
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: beta.kubernetes.io/arch
+                        operator: In
+                        values:
+                          - ppc64le
+                          - amd64
+          serviceAccountName: ${SECURITY_SERVICE_ACCOUNT_NAME}
+          containers:
+            - name: ibm-powervc-k8s-volume-provisioner
+              image: ${IMAGE_PROVISIONER_REPO}:${IMAGE_PROVISIONER_TAG}
+              imagePullPolicy: ${IMAGE_PROVISIONER_PULL}
+              args:
+                - "-prefix=powervc-k8s"
+              envFrom:
+                - configMapRef:
+                    name: ibm-powervc-config
+                - secretRef:
+                    name: ${OPENSTACK_CRED_SECRET_NAME}
+              env:
+                - name: OS_CACERT
+                  value: /etc/config/openstack.crt
+              volumeMounts:
+                - name: powervc-config
+                  mountPath: /etc/config
+              securityContext:
+                capabilities:
+                  drop:
+                    - all
+                  add: []
+                allowPrivilegeEscalation: true
+                readOnlyRootFilesystem: false
+                runAsNonRoot: false
+                privileged: true
+          volumes:
+            - name: powervc-config
+              configMap:
+                name: ibm-powervc-config
+                items:
+                  - key: OS_CACERT_DATA
+                    path: openstack.crt
+  - kind: DaemonSet
+    apiVersion: apps/v1beta2
+    metadata:
+      name: ibm-powervc-k8s-volume-flex
+      labels:
         app: ibm-powervc-k8s-volume-flex
-    template:
-      metadata:
-        labels:
+        chart: ibm-powervc-k8s-volume-driver-1.1.0
+    spec:
+      selector:
+        matchLabels:
           app: ibm-powervc-k8s-volume-flex
-          chart: ibm-powervc-k8s-volume-driver-1.1.0
-        annotations:
-          productName: ibm-powervc-k8s-volume-driver
-          productID: ibm-powervc-k8s-volume-driver_1.1.0_apache_00000
-          productVersion: 1.1.0
-      spec:
-        hostPID: false
-        hostIPC: false
-        hostNetwork: false
-        tolerations:
-        - key: dedicated
-          operator: Exists
-          effect: NoSchedule
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: beta.kubernetes.io/arch
-                  operator: In
-                  values:
-                  - ppc64le
-              - matchExpressions:
-                - key: role
-                  operator: In
-                  values:
-                  - master
-                - key: beta.kubernetes.io/arch
-                  operator: In
-                  values:
-                  - amd64
-        serviceAccountName: ${SECURITY_SERVICE_ACCOUNT_NAME}
-        containers:
-        - name: ibm-powervc-k8s-volume-flex
-          image: ${IMAGE_FLEX_VOLUME_REPO}:${IMAGE_FLEX_VOLUME_TAG}
-          imagePullPolicy: ${IMAGE_FLEX_VOLUME_PULL}
-          args:
-          - "powervc-k8s"
-          envFrom:
-          - configMapRef:
-              name: ibm-powervc-config
-          - secretRef:
-              name: ${OPENSTACK_CRED_SECRET_NAME}
-          env:
-          - name: OS_CACERT
-            value: /etc/config/openstack.crt
-          volumeMounts:
-          - name: powervc-config
-            mountPath: /etc/config
-          - name: flex-driver-dir
-            mountPath: /flex-mount-dir
-          securityContext:
-            capabilities:
-              drop:
-              - all
-              add: []
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
-            runAsNonRoot: false
-            privileged: false
-        terminationGracePeriodSeconds: 1
-        volumes:
-        - name: powervc-config
-          configMap:
-            name: ibm-powervc-config
-            items:
-            - key: OS_CACERT_DATA
-              path: openstack.crt
-        - name: flex-driver-dir
-          hostPath:
-            path: ${DRIVER_FLEX_PLUGIN_DIR}
+      template:
+        metadata:
+          labels:
+            app: ibm-powervc-k8s-volume-flex
+            chart: ibm-powervc-k8s-volume-driver-1.1.0
+          annotations:
+            productName: ibm-powervc-k8s-volume-driver
+            productID: ibm-powervc-k8s-volume-driver_1.1.0_apache_00000
+            productVersion: 1.1.0
+        spec:
+          hostPID: false
+          hostIPC: false
+          hostNetwork: false
+          tolerations:
+            - key: dedicated
+              operator: Exists
+              effect: NoSchedule
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: beta.kubernetes.io/arch
+                        operator: In
+                        values:
+                          - ppc64le
+                  - matchExpressions:
+                      - key: role
+                        operator: In
+                        values:
+                          - master
+                      - key: beta.kubernetes.io/arch
+                        operator: In
+                        values:
+                          - amd64
+          serviceAccountName: ${SECURITY_SERVICE_ACCOUNT_NAME}
+          containers:
+            - name: ibm-powervc-k8s-volume-flex
+              image: ${IMAGE_FLEX_VOLUME_REPO}:${IMAGE_FLEX_VOLUME_TAG}
+              imagePullPolicy: ${IMAGE_FLEX_VOLUME_PULL}
+              args:
+                - "powervc-k8s"
+              envFrom:
+                - configMapRef:
+                    name: ibm-powervc-config
+                - secretRef:
+                    name: ${OPENSTACK_CRED_SECRET_NAME}
+              env:
+                - name: OS_CACERT
+                  value: /etc/config/openstack.crt
+              volumeMounts:
+                - name: powervc-config
+                  mountPath: /etc/config
+                - name: flex-driver-dir
+                  mountPath: /flex-mount-dir
+              securityContext:
+                capabilities:
+                  drop:
+                    - all
+                  add: []
+                allowPrivilegeEscalation: true
+                readOnlyRootFilesystem: false
+                runAsNonRoot: false
+                privileged: true
+          terminationGracePeriodSeconds: 1
+          volumes:
+            - name: powervc-config
+              configMap:
+                name: ibm-powervc-config
+                items:
+                  - key: OS_CACERT_DATA
+                    path: openstack.crt
+            - name: flex-driver-dir
+              hostPath:
+                path: ${DRIVER_FLEX_PLUGIN_DIR}
 parameters:
-- name: OPENSTACK_IP_OR_HOSTNAME
-  displayName: "PowerVC IP or Hostname"
-  description: "IP address or host name of the PowerVC management server. It will be used to construct the PowerVC authentication URL."
-  required: true
-- name: OPENSTACK_CRED_SECRET_NAME
-  displayName: "PowerVC Credentials secret name"
-  description: "Name of the pre-created Secret object that contains the PowerVC admin username and password."
-  required: true
-- name: OPENSTACK_CERT_DATA
-  displayName: "PowerVC Certificate contents"
-  description: "Paste the contents (in PEM) from the /etc/pki/tls/certs/powervc.crt file. If left blank, certificate verification is not done, which is insecure."
-  required: false
-- name: OPENSTACK_PROJECT_NAME
-  displayName: "PowerVC Project name"
-  description: "The project to use. The specified PowerVC user must have the administrator role in this project."
-  value: "ibm-default"
-  required: true
-- name: OPENSTACK_DOMAIN_NAME
-  displayName: "PowerVC Domain name"
-  description: "The name of the project domain for the PowerVC user."
-  value: "Default"
-  required: true
-- name: DRIVER_FLEX_PLUGIN_DIR
-  displayName: "Kubernetes Flex Plugin directory"
-  description: "The directory that Kubernetes uses for the FlexVolume driver. Keep the default value unless the --flex-volume-plugin-dir flag has been overridden."
-  value: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/"
-  required: true
-- name: DRIVER_VOLUME_TYPE
-  displayName: "Volume type to use in storage class"
-  description: "The name or ID of the default storage class's volume type (storage template). This can specify the default storage details for persistent volumes."
-  required: false
-- name: DRIVER_DFLT_STG_CLASS
-  displayName: "Make this the default storage class"
-  description: "The default storage class is used if no storage class is specified when creating a persistent volume claim."
-  value: "true"
-  required: true
-- name: IMAGE_PROVISIONER_REPO
-  displayName: "Provisioner image repository"
-  description: "Name and location of the provisioner docker image repository."
-  value: "ibmcom/power-openstack-k8s-volume-provisioner"
-  required: true
-- name: IMAGE_PROVISIONER_TAG
-  displayName: "Provisioner image tag"
-  description: "Tag or label for the provisioner docker image. The default value is the only supported version."
-  value: "1.0.2"
-  required: true
-- name: IMAGE_FLEX_VOLUME_REPO
-  displayName: "FlexVolume image repository"
-  description: "Name and location of the flexvolume docker image repository."
-  value: "ibmcom/power-openstack-k8s-volume-flex"
-  required: true
-- name: IMAGE_FLEX_VOLUME_TAG
-  displayName: "FlexVolume image tag"
-  description: "Tag or label for the flexvolume docker image. The default value is the only supported version."
-  value: "1.0.2"
-  required: true
-- name: IMAGE_PROVISIONER_PULL
-  displayName: "Provisioner image pull policy"
-  description: "Pull policy for the provisioner docker image."
-  value: "IfNotPresent"
-  required: true
-- name: IMAGE_FLEX_VOLUME_PULL
-  displayName: "FlexVolume image pull policy"
-  description: "Pull policy for the flexvolume docker image."
-  value: "IfNotPresent"
-  required: true
-- name: SECURITY_SERVICE_ACCOUNT_NAME
-  displayName: "Service account name"
-  description: "Name of the service account to use"
-  value: "default"
-  required: true
+  - name: OPENSTACK_IP_OR_HOSTNAME
+    displayName: "PowerVC IP or Hostname"
+    description: "IP address or host name of the PowerVC management server. It will be used to construct the PowerVC authentication URL."
+    required: true
+  - name: OPENSTACK_CRED_SECRET_NAME
+    displayName: "PowerVC Credentials secret name"
+    description: "Name of the pre-created Secret object that contains the PowerVC admin username and password."
+    required: true
+  - name: OPENSTACK_CERT_DATA
+    displayName: "PowerVC Certificate contents"
+    description: "Paste the contents (in PEM) from the /etc/pki/tls/certs/powervc.crt file. If left blank, certificate verification is not done, which is insecure."
+    required: false
+  - name: OPENSTACK_PROJECT_NAME
+    displayName: "PowerVC Project name"
+    description: "The project to use. The specified PowerVC user must have the administrator role in this project."
+    value: "ibm-default"
+    required: true
+  - name: OPENSTACK_DOMAIN_NAME
+    displayName: "PowerVC Domain name"
+    description: "The name of the project domain for the PowerVC user."
+    value: "Default"
+    required: true
+  - name: DRIVER_FLEX_PLUGIN_DIR
+    displayName: "Kubernetes Flex Plugin directory"
+    description: "The directory that Kubernetes uses for the FlexVolume driver. Keep the default value unless the --flex-volume-plugin-dir flag has been overridden."
+    value: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/"
+    required: true
+  - name: DRIVER_VOLUME_TYPE
+    displayName: "Volume type to use in storage class"
+    description: "The name or ID of the default storage class's volume type (storage template). This can specify the default storage details for persistent volumes."
+    required: false
+  - name: DRIVER_DFLT_STG_CLASS
+    displayName: "Make this the default storage class"
+    description: "The default storage class is used if no storage class is specified when creating a persistent volume claim."
+    value: "true"
+    required: true
+  - name: IMAGE_PROVISIONER_REPO
+    displayName: "Provisioner image repository"
+    description: "Name and location of the provisioner docker image repository."
+    value: "ibmcom/power-openstack-k8s-volume-provisioner"
+    required: true
+  - name: IMAGE_PROVISIONER_TAG
+    displayName: "Provisioner image tag"
+    description: "Tag or label for the provisioner docker image. The default value is the only supported version."
+    value: "1.0.2"
+    required: true
+  - name: IMAGE_FLEX_VOLUME_REPO
+    displayName: "FlexVolume image repository"
+    description: "Name and location of the flexvolume docker image repository."
+    value: "ibmcom/power-openstack-k8s-volume-flex"
+    required: true
+  - name: IMAGE_FLEX_VOLUME_TAG
+    displayName: "FlexVolume image tag"
+    description: "Tag or label for the flexvolume docker image. The default value is the only supported version."
+    value: "1.0.2"
+    required: true
+  - name: IMAGE_PROVISIONER_PULL
+    displayName: "Provisioner image pull policy"
+    description: "Pull policy for the provisioner docker image."
+    value: "IfNotPresent"
+    required: true
+  - name: IMAGE_FLEX_VOLUME_PULL
+    displayName: "FlexVolume image pull policy"
+    description: "Pull policy for the flexvolume docker image."
+    value: "IfNotPresent"
+    required: true
+  - name: SECURITY_SERVICE_ACCOUNT_NAME
+    displayName: "Service account name"
+    description: "Name of the service account to use"
+    value: "default"
+    required: true
