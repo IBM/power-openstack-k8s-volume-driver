@@ -193,7 +193,6 @@ objects:
             image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
             args:
               - --csi-address=/csi/csi.sock
-              - --connection-timeout=3s   # TODO this line is deprecated from v1.1.0. So if exist its ignore it.
             volumeMounts:
               - name: socket-dir
                 mountPath: /csi
@@ -302,7 +301,6 @@ objects:
             image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
             args:
               - --csi-address=/csi/csi.sock
-              - --connection-timeout=3s   # TODO this line is deprecated from v1.1.0. So if exist its ignore it.
             volumeMounts:
               - name: socket-dir
                 mountPath: /csi
@@ -470,7 +468,6 @@ objects:
             image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
             args:
               - --csi-address=/csi/csi.sock
-              - --connection-timeout=3s   # TODO this line is deprecated from v1.1.0. So if exist its ignore it.
             volumeMounts:
               - name: socket-dir
                 mountPath: /csi
