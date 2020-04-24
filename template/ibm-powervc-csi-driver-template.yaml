@@ -1,0 +1,786 @@
+kind: Template
+apiVersion: template.openshift.io/v1
+metadata:
+  name: ibm-powervc-csi
+annotations:
+    openshift.io/display-name: "IBM PowerVC CSI Driver"
+    openshift.io/documentation-url: "https://www.ibm.com/systems/power/software/virtualization-management/"
+    openshift.io/long-description: "IBM® PowerVC Virtualization Center is an advanced virtualization and cloud management offering, built on OpenStack, that provides simplified virtualization management and cloud deployments for IBM AIX®, IBM i and Linux virtual machines (VMs) running on IBM Power Systems.\n\nPowerVC can be used as the cloud provider that is hosting the virtual machines for the OpenShift master and worker nodes. This CSI volume driver can also be used to provision storage volumes and mount storage for containers.\n\nThis template installs the CSI volume driver that communicates with PowerVC to provision persistent volumes in Kubernetes and attach those volumes to worker nodes for mounting containers.\n\nOnce the template is installed, you may use any storage class that uses the ibm/ibm-powervc-csi provisioner in the persistent volume claim to provision and attach volumes. The pre-defined storage class, ibm-powervc-csi-volume-default, is created as part of this installation. It is set as the default storage class unless you specify otherwise. The default storage class is used in persistent volume claims if no storage class is specified.\n\nYou can specify the type parameter in the storage class to specify which volume type (called the 'storage template' in PowerVC) to use when provisioning volumes. This volume type allows you to choose which storage backend and pool to use, along with other volume options. When installing the chart, you can specify the volume type to use in the pre-defined storage class. If the volume type is not specified at either point, no volume type is used."
+    openshift.io/provider-display-name: "IBM"
+    openshift.io/support-url: "https://www.ibm.com/support/home/"
+    description: "IBM® PowerVC Virtualization Center is an advanced virtualization and cloud management offering, bu    ilt on OpenStack, that provides simplified virtualization management and cloud deployments for IBM AIX®, IBM i and Linux virtual machi    nes (VMs) running on IBM Power Systems.\n\nPowerVC can be used as the cloud provider that is hosting the virtual machines for the Open    Shift master and worker nodes. This CSI volume driver can also be used to provision storage volumes and mount storage for containers.\    n\nThis template installs the CSI volume driver that communicates with PowerVC to provision persistent volumes in Kubernetes and attac    h those volumes to worker nodes for mounting containers.\n\nOnce the template is installed, you may use any storage class that uses th    e ibm/ibm-powervc-csi provisioner in the persistent volume claim to provision and attach volumes. The pre-defined storage class, ibm-power    vc-csi-volume-default, is created as part of this installation. It is set as the default storage class unless you specify otherwise. T    he default storage class is used in persistent volume claims if no storage class is specified.\n\nYou can specify the type parameter i    n the storage class to specify which volume type (called the 'storage template' in PowerVC) to use when provisioning volumes. This vol    ume type allows you to choose which storage backend and pool to use, along with other volume options. When installing the chart, you c    an specify the volume type to use in the pre-defined storage class. If the volume type is not specified at either point, no volume typ    e is used."
+    tags: "PowerVC,OpenStack,Storage,ppc64le"
+    iconClass: "icon-openstack"
+message: "The IBM PowerVC CSI driver is now ready to provision and attach volumes using the PowerVC management server at \"https://${OPENSTACK_IP_OR_HOSTNAME}:5000/v3/\".\n\nYou can use any storage class that specifies the \"ibm/ibm-powervc-csi\" provisioner in persistent volume claims, including the pre-defined storage class \"ibm-powervc-csi-volume-default\" that has been created."
+objects:
+- kind: ConfigMap
+  apiVersion: v1
+  metadata:
+    name: ibm-powervc-config
+    labels:
+      app: ibm-powervc-csi
+      chart: ibm-powervc-csi-1.1.0
+  data:
+     OS_AUTH_URL: "https://${OPENSTACK_IP_OR_HOSTNAME}:5000/v3/"
+     OS_PROJECT_NAME: "${OPENSTACK_PROJECT_NAME}"
+     OS_DOMAIN_NAME: "${OPENSTACK_DOMAIN_NAME}"
+- kind: StorageClass
+  apiVersion: storage.k8s.io/v1
+  metadata:
+    name: ibm-powervc-csi-volume-default
+    annotations:
+      storageclass.kubernetes.io/is-default-class: "${DRIVER_DFLT_STG_CLASS}"
+  parameters:
+    type: "${DRIVER_VOLUME_TYPE}"
+    csi.storage.k8s.io/fstype: "ext4"
+  provisioner: ibm-powervc-csi
+  allowVolumeExpansion: true
+- kind: ServiceAccount
+  apiVersion: v1
+  metadata:
+    name: ibm-powervc-csi-attacher
+    namespace: kube-system
+    labels:
+      product: ibm-powervc-csi
+- kind: ServiceAccount
+  apiVersion: v1
+  metadata:
+    name: ibm-powervc-csi-resizer
+    namespace: kube-system
+    labels:
+      product: ibm-powervc-csi
+- kind: ClusterRole
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: ibm-powervc-csi-attacher
+    labels:
+      product: ibm-powervc-csi
+  rules:
+    - apiGroups: [""]
+      resources: ["secrets"]
+      verbs: ["get", "list"]
+    - apiGroups: [""]
+      resources: ["events"]
+      verbs: ["get", "list", "watch", "update"]
+    - apiGroups: [""]
+      resources: ["persistentvolumes"]
+      verbs: ["get", "list", "watch", "update"]
+    - apiGroups: [""]
+      resources: ["nodes"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["csinodes"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["volumeattachments"]
+      verbs: ["get", "list", "watch", "update"]
+- kind: ClusterRole
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: ibm-powervc-csi-resizer
+    labels:
+      product: ibm-powervc-csi
+  rules:
+    - apiGroups: [""]
+      resources: ["secrets"]
+      verbs: ["get", "list"]
+    - apiGroups: [""]
+      resources: ["events"]
+      verbs: ["get", "list", "watch", "update"]
+    - apiGroups: [""]
+      resources: ["persistentvolumes"]
+      verbs: ["get", "list", "watch", "update"]
+    - apiGroups: [""]
+      resources: ["nodes"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["csinodes"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["volumeattachments"]
+      verbs: ["get", "list", "watch", "update"]
+- kind: ClusterRoleBinding
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: ibm-powervc-csi-attacher-role
+    labels:
+      product: ibm-powervc-csi
+  subjects:
+    - kind: ServiceAccount
+      name: ibm-powervc-csi-attacher
+      namespace: kube-system
+  roleRef:
+    kind: ClusterRole
+    name: ibm-powervc-csi-attacher
+    apiGroup: rbac.authorization.k8s.io
+- kind: ClusterRoleBinding
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: ibm-powervc-csi-resizer-role
+    labels:
+      product: ibm-powervc-csi
+  subjects:
+    - kind: ServiceAccount
+      name: ibm-powervc-csi-resizer
+      namespace: kube-system
+  roleRef:
+    kind: ClusterRole
+    name: ibm-powervc-csi-resizer
+    apiGroup: rbac.authorization.k8s.io
+# needed for StatefulSet
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: ibm-powervc-csi-attacher-plugin
+    labels:
+      app: ibm-powervc-csi
+  spec:
+    selector:
+      app: ibm-powervc-csi
+    ports:
+      - name: dummy
+        port: 12345
+- kind: StatefulSet
+  apiVersion: apps/v1
+  metadata:
+    name: ibm-powervc-csi-attacher-plugin
+    namespace: kube-system
+    labels:
+      product: ibm-powervc-csi
+      app: ibm-powervc-csi
+      chart: ibm-powervc-csi-1.0.0
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: ibm-powervc-csi
+    serviceName: "ibm-powervc-csi-attacher-plugin"
+    template:
+      metadata:
+        labels:
+          app: ibm-powervc-csi
+          product: ibm-powervc-csi
+          chart: ibm-powervc-csi-1.1.0
+      spec:
+        serviceAccount: ibm-powervc-csi-attacher
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: beta.kubernetes.io/arch
+                  operator: In
+                  values:
+                  - ppc64le
+                  - amd64
+        serviceAccountName: ${SECURITY_SERVICE_ACCOUNT_NAME}
+        imagePullSecrets:
+          - name: ${QUAY_SECRET_NAME}
+        containers:
+          - name: csi-attacher
+            image: ibmcom/ibm-powervc-csi-attacher:v4.3
+            imagePullPolicy: "IfNotPresent"
+            args:
+              - --csi-address=$(ADDRESS)
+              - --v=5
+            env:
+              - name: ADDRESS
+                value: /csi/csi.sock
+            volumeMounts:
+              - name: socket-dir
+                mountPath: /csi
+          - name: liveness-probe
+            image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
+            args:
+              - --csi-address=/csi/csi.sock
+              - --connection-timeout=3s   # TODO this line is deprecated from v1.1.0. So if exist its ignore it.
+            volumeMounts:
+              - name: socket-dir
+                mountPath: /csi
+          - name: ibm-powervc-csi-attacher
+            image: ${IMAGE_REPO}:${IMAGE_TAG}
+            imagePullPolicy: ${IMAGE_PROVISIONER_PULL}
+            args:
+              - --v=5
+              - --csi-address=$(ADDRESS)
+              #- -prefix=powervc-csi
+            envFrom:
+              - configMapRef:
+                  name: ibm-powervc-config
+              - secretRef:
+                  name: ${OPENSTACK_CRED_SECRET_NAME}
+            env:
+              - name: OS_CACERT
+                value: /etc/config/openstack.crt
+              - name: ADDRESS
+                value: unix:///csi/csi.sock
+            volumeMounts:
+              - name: powervc-config
+                mountPath: /etc/config
+              - name: socket-dir
+                mountPath: /csi
+            ports:
+              - containerPort: 9808
+                name: healthz
+                protocol: TCP
+            livenessProbe:
+              failureThreshold: 5
+              httpGet:
+                path: /healthz
+                port: healthz
+              initialDelaySeconds: 10
+              timeoutSeconds: 3
+              periodSeconds: 2
+            securityContext:
+              capabilities:
+                drop:
+                - all
+                add: []
+              allowPrivilegeEscalation: true
+              readOnlyRootFilesystem: false
+              runAsNonRoot: false
+              privileged: true
+        volumes:
+          - name: powervc-config
+            items:
+            - key: OS_CACERT_DATA
+              path: openstack.crt
+          - name: socket-dir
+            hostPath:
+              path: /var/lib/kubelet/plugins/ibm-powervc-csi
+              type: DirectoryOrCreate
+- kind: StatefulSet
+  apiVersion: apps/v1
+  metadata:
+    name: ibm-powervc-csi-resizer-plugin
+    namespace: kube-system
+    labels:
+      product: ibm-powervc-csi
+      app: ibm-powervc-csi
+      chart: ibm-powervc-csi-1.0.0
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: ibm-powervc-csi
+    serviceName: "ibm-powervc-csi-resizer-plugin"
+    template:
+      metadata:
+        labels:
+          app: ibm-powervc-csi
+          product: ibm-powervc-csi
+          chart: ibm-powervc-csi-1.1.0
+      spec:
+        serviceAccount: ibm-powervc-csi-resizer
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: beta.kubernetes.io/arch
+                  operator: In
+                  values:
+                  - ppc64le
+                  - amd64
+        serviceAccountName: ${SECURITY_SERVICE_ACCOUNT_NAME}
+        imagePullSecrets:
+          - name: ${QUAY_SECRET_NAME}
+        containers:
+          - name: csi-resizer
+            image: ibmcom/ibm-powervc-csi-resizer:v4.3
+            imagePullPolicy: "IfNotPresent"
+            args:
+              - --csi-address=$(ADDRESS)
+              - --v=5
+            env:
+              - name: ADDRESS
+                value: /csi/csi.sock
+            volumeMounts:
+              - name: socket-dir
+                mountPath: /csi
+          - name: liveness-probe
+            image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
+            args:
+              - --csi-address=/csi/csi.sock
+              - --connection-timeout=3s   # TODO this line is deprecated from v1.1.0. So if exist its ignore it.
+            volumeMounts:
+              - name: socket-dir
+                mountPath: /csi
+          - name: ibm-powervc-csi-resizer
+            image: ${IMAGE_REPO}:${IMAGE_TAG}
+            imagePullPolicy: ${IMAGE_PROVISIONER_PULL}
+            args:
+              - --v=5
+              - --csi-address=$(ADDRESS)
+              #- -prefix=powervc-csi
+            envFrom:
+              - configMapRef:
+                  name: ibm-powervc-config
+              - secretRef:
+                  name: ${OPENSTACK_CRED_SECRET_NAME}
+            env:
+              - name: OS_CACERT
+                value: /etc/config/openstack.crt
+              - name: ADDRESS
+                value: unix:///csi/csi.sock
+            volumeMounts:
+              - name: powervc-config
+                mountPath: /etc/config
+              - name: socket-dir
+                mountPath: /csi
+            ports:
+              - containerPort: 9808
+                name: healthz
+                protocol: TCP
+            livenessProbe:
+              failureThreshold: 5
+              httpGet:
+                path: /healthz
+                port: healthz
+              initialDelaySeconds: 10
+              timeoutSeconds: 3
+              periodSeconds: 2
+            securityContext:
+              capabilities:
+                drop:
+                - all
+                add: []
+              allowPrivilegeEscalation: true
+              readOnlyRootFilesystem: false
+              runAsNonRoot: false
+              privileged: true
+        volumes:
+          - name: powervc-config
+            items:
+            - key: OS_CACERT_DATA
+              path: openstack.crt
+          - name: socket-dir
+            hostPath:
+              path: /var/lib/kubelet/plugins/ibm-powervc-csi
+              type: DirectoryOrCreate
+- kind: ServiceAccount
+  apiVersion: v1
+  metadata:
+    name: ibm-powervc-csi-provisioner
+    namespace: kube-system
+    lebels:
+      product: ibm-powervc-csi
+- kind: ClusterRole
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: ibm-powervc-csi-provisioner
+    labels:
+      product: ibm-powervc-csi
+  rules:
+    - apiGroups: [""]
+      resources: ["secrets"]
+      verbs: ["get", "list"]
+    - apiGroups: [""]
+      resources: ["persistentvolumes"]
+      verbs: ["get", "list", "watch", "create", "delete"]
+    - apiGroups: [""]
+      resources: ["persistentvolumeclaims"]
+      verbs: ["get", "list", "watch", "update"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["csinodes"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["storageclasses"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: [""]
+      resources: ["events"]
+      verbs: ["list", "watch", "create", "update", "patch"]
+- kind: ClusterRoleBinding
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: ibm-powervc-csi-provisioner-role
+    lebels:
+      product: ibm-powrvc-csi
+  subjects:
+    - kind: ServiceAccount
+      name: ibm-powervc-csi-provisioner
+      namespace: kube-system
+  roleRef:
+    kind: ClusterRole
+    name: ibm-powervc-csi-provisioner
+    apiGroup: rbac.authorization.k8s.io
+# needed for StatefulSet
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: ibm-powervc-csi-provisioner-plugin
+    labels:
+      app: ibm-powervc-csi
+  spec:
+    selector:
+      app: ibm-powervc-csi
+    ports:
+      - name: dummy
+        port: 12345
+- kind: StatefulSet
+  apiVersion: apps/v1
+  metadata:
+    name: ibm-powervc-csi-provisioner-plugin
+    namespace: kube-system
+    labels:
+      product: ibm-powervc-csi
+      app: ibm-powervc-csi
+      chart: ibm-powervc-csi-1.1.0
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: ibm-powervc-csi
+    serviceName: "ibm-powervc-csi-provisioner-plugin"
+    template:
+      metadata:
+        labels:
+          app: ibm-powervc-csi
+          product: ibm-powervc-csi
+          chart: ibm-powervc-csi-1.1.0
+      spec:
+        serviceAccount: ibm-powervc-csi-provisioner
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: beta.kubernetes.io/arch
+                  operator: In
+                  values:
+                  - ppc64le
+                  - amd64
+        serviceAccountName: ${SECURITY_SERVICE_ACCOUNT_NAME}
+        imagePullSecrets:
+          - name: ${QUAY_SECRET_NAME}
+        containers:
+          - name: csi-provisioner
+            image: ibmcom/ibm-powervc-csi-provisioner:v4.3
+            imagePullPolicy: "IfNotPresent"
+            args:
+              - --csi-address=$(ADDRESS)
+              - --v=5
+            env:
+              - name: ADDRESS
+                value: /csi/csi.sock
+            volumeMounts:
+              - name: socket-dir
+                mountPath: /csi
+          - name: liveness-probe
+            image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
+            args:
+              - --csi-address=/csi/csi.sock
+              - --connection-timeout=3s   # TODO this line is deprecated from v1.1.0. So if exist its ignore it.
+            volumeMounts:
+              - name: socket-dir
+                mountPath: /csi
+          - name: ibm-powervc-csi-provisioner
+            image: ${IMAGE_REPO}:${IMAGE_TAG}
+            imagePullPolicy: ${IMAGE_PROVISIONER_PULL}
+            args:
+              #- --provisioner=ibm-powervc-csi
+              - --csi-address=$(ADDRESS)
+              - --v=5
+              #- -prefix=powervc-csi
+            envFrom:
+              - configMapRef:
+                  name: ibm-powervc-config
+              - secretRef:
+                  name: ${OPENSTACK_CRED_SECRET_NAME}
+            env:
+              - name: OS_CACERT
+                value: /etc/config/openstack.crt
+              - name: ADDRESS
+                value: unix:///csi/csi.sock
+            volumeMounts:
+              - name: powervc-config
+                mountPath: /etc/config
+              - name: socket-dir
+                mountPath: /csi
+            securityContext:
+              capabilities:
+                drop:
+                - all
+                add: []
+              allowPrivilegeEscalation: true
+              readOnlyRootFilesystem: false
+              runAsNonRoot: false
+              privileged: true
+        volumes:
+          - name: powervc-config
+            items:
+            - key: OS_CACERT_DATA
+              path: openstack.crt
+          - name: socket-dir
+            hostPath:
+              path: /var/lib/kubelet/plugins/ibm-powervc-csi
+              type: DirectoryOrCreate
+- kind: ServiceAccount
+  apiVersion: v1
+  metadata:
+    name: ibm-powervc-csi-node
+    namespace: kube-system
+    labels:
+      product: ibm-powervc-csi
+- kind: ClusterRole
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: ibm-powervc-csi-node
+    labels:
+      product: ibm-powervc-csi
+  rules:
+    - apiGroups: [""]
+      resources: ["secrets"]
+      verbs: ["get", "list"]
+    - apiGroups: [""]
+      resources: ["nodes"]
+      verbs: ["get", "list", "update"]
+    - apiGroups: [""]
+      resources: ["namespaces"]
+      verbs: ["get", "list"]
+    - apiGroups: [""]
+      resources: ["persistentvolumes"]
+      verbs: ["get", "list", "watch", "update"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["csinodes"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["volumeattachments"]
+      verbs: ["get", "list", "watch", "update"]
+- kind: ClusterRoleBinding
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: ibm-powervc-csi-node-role
+    labels:
+      product: ibm-powervc-csi
+  subjects:
+    - kind: ServiceAccount
+      name: ibm-powervc-csi-node
+      namespace: kube-system
+  roleRef:
+    kind: ClusterRole
+    name: ibm-powervc-csi-node
+    apiGroup: rbac.authorization.k8s.io
+- kind: DaemonSet
+  apiVersion: apps/v1
+  metadata:
+    name: ibm-powervc-csi-plugin
+    namespace: kube-system
+    labels:
+      product: ibm-powervc-csi
+  spec:
+    selector:
+      matchLabels:
+        app: ibm-powervc-csi
+    template:
+      metadata:
+        labels:
+          app: ibm-powervc-csi
+          product: ibm-powervc-csi
+      spec:
+        serviceAccount: ibm-powervc-csi-node
+        #hostNetwork: true
+        imagePullSecrets:
+          - name: ${QUAY_SECRET_NAME}
+        containers:
+          - name: node-driver-registrar
+            image: ibmcom/ibm-powervc-csi-node-driver-registrar:v4.3
+            imagePullPolicy: "IfNotPresent"
+            args:
+              - --csi-address=/csi/csi.sock
+              - --kubelet-registration-path=/var/lib/kubelet/plugins/ibm-powervc-csi/csi.sock
+              - --v=5
+            securityContext:
+              privileged: true
+            lifecycle:
+              preStop:
+                exec:
+                  command: ["/bin/sh", "-c", "rm -rf /registration/ibm-powervc-csi /registration/ibm-powervc-csi-reg.sock"]
+            env:
+              - name: KUBE_NODE_NAME
+                valueFrom:
+                  fieldRef:
+                    apiVersion: v1
+                    fieldPath: spec.nodeName
+            volumeMounts:
+              - name: registration-dir
+                mountPath: /registration
+              - name: socket-dir
+                mountPath: /csi
+          - name: liveness-probe
+            image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
+            args:
+              - --csi-address=/csi/csi.sock
+              - --health-port=9808
+            volumeMounts:
+              - name: socket-dir
+                mountPath: /csi
+          - name: ibm-powervc-csi
+            securityContext:
+              privileged: true
+              capabilities:
+                drop:
+                - all
+                add: []
+              allowPrivilegeEscalation: true
+              readOnlyRootFilesystem: false
+              runAsUser: 0
+            image: ${IMAGE_REPO}:${IMAGE_TAG}
+            imagePullPolicy: ${IMAGE_PROVISIONER_PULL}
+            args:
+              - --nodeid=$(NODE_ID)
+              - --csi-address=$(CSI_ENDPOINT)
+              - --v=5
+              - --drivername=ibm-powervc-csi
+              #- -prefix=powervc-csi
+            envFrom:
+              - configMapRef:
+                  name: ibm-powervc-config
+              - secretRef:
+                  name: ${OPENSTACK_CRED_SECRET_NAME}
+            env:
+              - name: OS_CACERT
+                value: /etc/config/openstack.crt
+              - name: NODE_ID
+                valueFrom:
+                  fieldRef:
+                    apiVersion: v1
+                    fieldPath: spec.nodeName
+              - name: CSI_ENDPOINT
+                value: unix:///csi/csi.sock
+            volumeMounts:
+              - name: socket-dir
+                mountPath: /csi
+              - name: mountpoint-dir
+                mountPath: /var/lib/kubelet/pods
+                mountPropagation: Bidirectional
+              - name: powervc-config
+                mountPath: /etc/config
+              - name: plugin-dir
+                mountPath: /var/lib/kubelet/plugins
+                mountPropagation: Bidirectional
+              - name: sys-dir
+                mountPath: /sys
+              - name: dev-dir
+                mountPath: /dev
+              - name: sbin-dir
+                mountPath: /usr/sbin
+              - name: bin-dir
+                mountPath: /usr/bin
+              - name: ulib-dir
+                mountPath: /usr/lib64
+            ports:
+              - name: healthz
+                containerPort: 9808
+                protocol: TCP
+            livenessProbe:
+              httpGet:
+                path: /healthz
+                port: healthz
+              initialDelaySeconds: 10
+              timeoutSeconds: 3
+              periodSeconds: 110
+              failureThreshold: 5
+        volumes:
+          - name: powervc-config
+            items:
+            - key: OS_CACERT_DATA
+              path: openstack.crt
+          - name: socket-dir
+            hostPath:
+              path: /var/lib/kubelet/plugins/ibm-powervc-csi
+              type: DirectoryOrCreate
+          - name: mountpoint-dir
+            hostPath:
+              path: /var/lib/kubelet/pods
+              type: DirectoryOrCreate
+          - name: plugin-dir
+            hostPath:
+              path: /var/lib/kubelet/plugins
+              type: DirectoryOrCreate
+          - name: registration-dir
+            hostPath:
+              path: /var/lib/kubelet/plugins_registry
+              type: DirectoryOrCreate
+          - name: sys-dir
+            hostPath:
+              path: /sys
+              type: Directory
+          - name: dev-dir
+            hostPath:
+              path: /dev
+              type: Directory
+          - name: sbin-dir
+            hostPath:
+              path: /usr/sbin
+              type: Directory
+          - name: bin-dir
+            hostPath:
+              path: /usr/bin
+              type: Directory
+          - name: ulib-dir
+            hostPath:
+              path: /usr/lib64/
+              type: Directory
+- apiVersion: storage.k8s.io/v1beta1
+  kind: CSIDriver
+  metadata:
+    name: ibm-powervc-csi
+  spec:
+    attachRequired: true
+    podInfoOnMount: false
+parameters:
+- name: OPENSTACK_IP_OR_HOSTNAME
+  displayName: "PowerVC IP or Hostname"
+  description: "IP address or host name of the PowerVC management server. It will be used to construct the PowerVC authentication URL."
+  required: true
+- name: OPENSTACK_CRED_SECRET_NAME
+  displayName: "PowerVC Credentials secret name"
+  description: "Name of the pre-created Secret object that contains the PowerVC admin username OS_USERNAME and password OS_PASSWORD."
+  required: true
+- name: QUAY_SECRET_NAME
+  displayName: "Quay.io access secretname"
+  description: "Name of the pre-created Secret object that contains the credentials to access quay.io."
+- name: OPENSTACK_CERT_DATA
+  displayName: "PowerVC Certificate contents"
+  description: "Paste the contents (in PEM) from the /etc/pki/tls/certs/powervc.crt file. If left blank, certificate verification is not done, which is insecure."
+  required: false
+- name: OPENSTACK_PROJECT_NAME
+  displayName: "PowerVC Project name"
+  description: "The project to use. The specified PowerVC user must have the administrator role in this project."
+  value: "ibm-default"
+  required: true
+- name: OPENSTACK_DOMAIN_NAME
+  displayName: "PowerVC Domain name"
+  description: "The name of the project domain for the PowerVC user."
+  value: "Default"
+  required: true
+- name: DRIVER_VOLUME_TYPE
+  displayName: "Volume type to use in storage class"
+  description: "The name or ID of the default storage class's volume type (storage template). This can specify the default storage details for persistent volumes."
+  required: false
+- name: DRIVER_DFLT_STG_CLASS
+  displayName: "Make this the default storage class"
+  description: "The default storage class is used if no storage class is specified when creating a persistent volume claim."
+  value: "true"
+  required: true
+- name: IMAGE_REPO
+  displayName: "Provisioner image repository"
+  description: "Name and location of the provisioner docker image repository."
+  value: "ibmcom/ibm-powervc-csi-driver"
+  required: true
+- name: IMAGE_TAG
+  displayName: "Provisioner image tag"
+  description: "Tag or label for the provisioner docker image. The default value is the only supported version."
+  value: "1.0.0"
+  required: true
+- name: IMAGE_PROVISIONER_PULL
+  displayName: "Provisioner image pull policy"
+  description: "Pull policy for the provisioner docker image."
+  value: "IfNotPresent"
+  required: true
+- name: SECURITY_SERVICE_ACCOUNT_NAME
+  displayName: "Service account name"
+  description: "Name of the service account to use"
+  value: "default"
+  required: true
