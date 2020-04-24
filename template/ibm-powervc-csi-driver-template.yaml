@@ -178,7 +178,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: csi-attacher
-            image: ibmcom/ibm-powervc-csi-attacher:v4.3
+            image: ibmcom/ibm-powervc-csi-attacher
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=$(ADDRESS)
@@ -190,10 +190,9 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
+            image: ibmcom/ibm-powervc-csi-livenessprobe
             args:
               - --csi-address=/csi/csi.sock
-              - --connection-timeout=3s   # TODO this line is deprecated from v1.1.0. So if exist its ignore it.
             volumeMounts:
               - name: socket-dir
                 mountPath: /csi
@@ -287,7 +286,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: csi-resizer
-            image: ibmcom/ibm-powervc-csi-resizer:v4.3
+            image: ibmcom/ibm-powervc-csi-resizer
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=$(ADDRESS)
@@ -299,10 +298,9 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
+            image: ibmcom/ibm-powervc-csi-livenessprobe
             args:
               - --csi-address=/csi/csi.sock
-              - --connection-timeout=3s   # TODO this line is deprecated from v1.1.0. So if exist its ignore it.
             volumeMounts:
               - name: socket-dir
                 mountPath: /csi
@@ -455,7 +453,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: csi-provisioner
-            image: ibmcom/ibm-powervc-csi-provisioner:v4.3
+            image: ibmcom/ibm-powervc-csi-provisioner
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=$(ADDRESS)
@@ -467,10 +465,9 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
+            image: ibmcom/ibm-powervc-csi-livenessprobe
             args:
               - --csi-address=/csi/csi.sock
-              - --connection-timeout=3s   # TODO this line is deprecated from v1.1.0. So if exist its ignore it.
             volumeMounts:
               - name: socket-dir
                 mountPath: /csi
@@ -584,7 +581,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: node-driver-registrar
-            image: ibmcom/ibm-powervc-csi-node-driver-registrar:v4.3
+            image: ibmcom/ibm-powervc-csi-node-driver-registrar
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=/csi/csi.sock
@@ -608,7 +605,7 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe:v4.3
+            image: ibmcom/ibm-powervc-csi-livenessprobe
             args:
               - --csi-address=/csi/csi.sock
               - --health-port=9808
