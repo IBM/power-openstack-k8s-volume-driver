@@ -178,7 +178,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: csi-attacher
-            image: ibmcom/ibm-powervc-csi-attacher
+            image: ibmcom/ibm-powervc-csi-attacher:1.0.0
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=$(ADDRESS)
@@ -190,7 +190,7 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe
+            image: ibmcom/ibm-powervc-csi-livenessprobe:1.0.0
             args:
               - --csi-address=/csi/csi.sock
             volumeMounts:
@@ -286,7 +286,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: csi-resizer
-            image: ibmcom/ibm-powervc-csi-resizer
+            image: ibmcom/ibm-powervc-csi-resizer:1.0.0
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=$(ADDRESS)
@@ -298,7 +298,7 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe
+            image: ibmcom/ibm-powervc-csi-livenessprobe:1.0.0
             args:
               - --csi-address=/csi/csi.sock
             volumeMounts:
@@ -453,7 +453,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: csi-provisioner
-            image: ibmcom/ibm-powervc-csi-provisioner
+            image: ibmcom/ibm-powervc-csi-provisioner:1.0.0
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=$(ADDRESS)
@@ -465,7 +465,7 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe
+            image: ibmcom/ibm-powervc-csi-livenessprobe:1.0.0
             args:
               - --csi-address=/csi/csi.sock
             volumeMounts:
@@ -581,7 +581,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: node-driver-registrar
-            image: ibmcom/ibm-powervc-csi-node-driver-registrar
+            image: ibmcom/ibm-powervc-csi-node-driver-registrar:1.0.0
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=/csi/csi.sock
@@ -605,7 +605,7 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe
+            image: ibmcom/ibm-powervc-csi-livenessprobe:1.0.0
             args:
               - --csi-address=/csi/csi.sock
               - --health-port=9808
