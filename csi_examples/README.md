@@ -58,7 +58,7 @@ ibm-powervc-csi-plugin-vd4tr           3/3     Running      
 ibm-powervc-csi-provisioner-plugin-0   3/3     Running            0          8m49s
 ibm-powervc-csi-resizer-plugin-0       3/3     Running   0 8m49s
 ```
-*Note: "example-pod" is the name used in the name used in sample script.*
+*Note: "example-pod" is the name used in sample script.*
 
 4. Describe the newly created pod.
 
