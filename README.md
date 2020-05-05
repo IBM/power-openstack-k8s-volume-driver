@@ -29,9 +29,9 @@ To test these docker images, first the docker images must be loaded through the 
 
 The following 3 templates for PowerVC CSI Driver are available here:
 
-- [ibm-powervc-csi-driver-template.yaml](templates/ibm-powervc-csi-driver-template.yaml)
-- [scc.yaml](templates/scc.yaml)
-- [secret.yaml](secret.yaml)
+- [ibm-powervc-csi-driver-template.yaml](template/ibm-powervc-csi-driver-template.yaml)
+- [scc.yaml](template/scc.yaml)
+- [secret.yaml](template/secret.yaml)
 
 **Sample scripts are available here:**
 
