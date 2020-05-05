@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-pod
+  labels:
+    app: nginx
+spec:
+  containers:
+   - name: web-server
+     image: nginx
+     volumeMounts:
+       - name: mypvc
+         mountPath: /usr/share/nginx/html/powervc
+     ports:
+     - containerPort: 80
+  volumes:
+   - name: mypvc
+     persistentVolumeClaim:
+       claimName: example-pvc
+       readOnly: false
