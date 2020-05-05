@@ -5,7 +5,7 @@
 Run the following command to create a volume:
 
 ```
-oc apply -f < path to csi examples directory>/static-pvc.yaml
+oc apply -f <path to csi examples directory>/static-pvc.yaml
 ```
 
 On your PowerVC you should see a volume created under 'data volumes' section. 
@@ -41,7 +41,7 @@ oc delete pvc <persistent volume claim name>
 
 1. Execute this command to create an example pod:
 ```
-oc apply -f < path to csi examples directory>/dynamic-pod.yaml
+oc apply -f <path to csi examples directory>/dynamic-pod.yaml
 ```
 
 2. After a moment, on PowerVC, you should see the volume getting attached to the worker node.
@@ -62,7 +62,9 @@ ibm-powervc-csi-resizer-plugin-0       3/3     Running   0 8m49s
 
 4. Describe the newly created pod.
 
-5. It should show mypvc (name used in sample script) is mounted inside the pod as /usr/share/nginx/html/powervc.
+5. It should show mypvc is mounted inside the pod as **/usr/share/nginx/html/powervc**.
+*(Note: mypvc is the name used in the sample script)*
+
 6. Now, log into the pod and verify the directory:
 
 ```
