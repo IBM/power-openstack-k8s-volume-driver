@@ -17,3 +17,23 @@ When using ICp, the docker images will be available on docker hub so will be imp
 
 # Test
 To test these docker images, first the docker images must be loaded through the mechanism described in the install step.  Once the images are loaded then the *__ibm-powervc-k8s-volume-driver__* helm chart must be installed so that the flex driver and provisioner are registered within Kubernetes.  From this point a persistent volume claim can be created, using the *__ibm-powervc-k8s-volume-default__* storage class, and then pods/containers can be deployed using this persistent volume claim to mount storage to the given containers.
+
+
+# IBM PowerVC CSI Driver
+
+**Knowledge Center Documentation:**
+
+[Installation/Configuration Steps](https://www.ibm.com/support/knowledgecenter/en/SSXK2N_1.4.4/com.ibm.powervc.standard.help.doc/powervc_csi_storage_install.html)
+
+**Templates**
+
+The following 3 templates for PowerVC CSI Driver are available here:
+
+- [ibm-powervc-csi-driver-template.yaml](template/ibm-powervc-csi-driver-template.yaml)
+- [scc.yaml](template/scc.yaml)
+- [secret.yaml](template/secret.yaml)
+
+**Sample scripts are available here:**
+
+[Examples](csi_examples)
+
