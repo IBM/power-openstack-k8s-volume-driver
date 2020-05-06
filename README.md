@@ -23,8 +23,7 @@ To test these docker images, first the docker images must be loaded through the 
 
 **Knowledge Center Documentation:**
 
-[Installation/Configuration Steps]
-(https://www.ibm.com/support/knowledgecenter/en/SSXK2N_1.4.4/com.ibm.powervc.standard.help.doc/powervc_csi_storage_install.html)
+[Installation/Configuration Steps](https://www.ibm.com/support/knowledgecenter/en/SSXK2N_1.4.4/com.ibm.powervc.standard.help.doc/powervc_csi_storage_install.html)
 
 **Templates**
 
