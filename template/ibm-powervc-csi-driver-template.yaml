@@ -183,6 +183,7 @@ objects:
             args:
               - --csi-address=$(ADDRESS)
               - --v=5
+              - --timeout=300s
             env:
               - name: ADDRESS
                 value: /csi/csi.sock
@@ -458,6 +459,7 @@ objects:
             args:
               - --csi-address=$(ADDRESS)
               - --v=5
+              - --timeout=300s
             env:
               - name: ADDRESS
                 value: /csi/csi.sock
