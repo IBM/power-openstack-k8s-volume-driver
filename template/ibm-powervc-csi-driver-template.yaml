@@ -197,49 +197,6 @@ objects:
             volumeMounts:
               - name: socket-dir
                 mountPath: /csi
-          - name: ibm-powervc-csi-attacher
-            image: ${IMAGE_REPO}:${IMAGE_TAG}
-            imagePullPolicy: ${IMAGE_PROVISIONER_PULL}
-            args:
-              - --v=5
-              - --csi-address=$(ADDRESS)
-              #- -prefix=powervc-csi
-            envFrom:
-              - configMapRef:
-                  name: ibm-powervc-config
-              - secretRef:
-                  name: ${OPENSTACK_CRED_SECRET_NAME}
-            env:
-              - name: OS_CACERT
-                value: /etc/config/openstack.crt
-              - name: ADDRESS
-                value: unix:///csi/csi.sock
-            volumeMounts:
-              - name: powervc-config
-                mountPath: /etc/config
-              - name: socket-dir
-                mountPath: /csi
-            ports:
-              - containerPort: 9808
-                name: healthz
-                protocol: TCP
-            livenessProbe:
-              failureThreshold: 5
-              httpGet:
-                path: /healthz
-                port: healthz
-              initialDelaySeconds: 10
-              timeoutSeconds: 3
-              periodSeconds: 2
-            securityContext:
-              capabilities:
-                drop:
-                - all
-                add: []
-              allowPrivilegeEscalation: true
-              readOnlyRootFilesystem: false
-              runAsNonRoot: false
-              privileged: true
         volumes:
           - name: powervc-config
             items:
@@ -305,49 +262,6 @@ objects:
             volumeMounts:
               - name: socket-dir
                 mountPath: /csi
-          - name: ibm-powervc-csi-resizer
-            image: ${IMAGE_REPO}:${IMAGE_TAG}
-            imagePullPolicy: ${IMAGE_PROVISIONER_PULL}
-            args:
-              - --v=5
-              - --csi-address=$(ADDRESS)
-              #- -prefix=powervc-csi
-            envFrom:
-              - configMapRef:
-                  name: ibm-powervc-config
-              - secretRef:
-                  name: ${OPENSTACK_CRED_SECRET_NAME}
-            env:
-              - name: OS_CACERT
-                value: /etc/config/openstack.crt
-              - name: ADDRESS
-                value: unix:///csi/csi.sock
-            volumeMounts:
-              - name: powervc-config
-                mountPath: /etc/config
-              - name: socket-dir
-                mountPath: /csi
-            ports:
-              - containerPort: 9808
-                name: healthz
-                protocol: TCP
-            livenessProbe:
-              failureThreshold: 5
-              httpGet:
-                path: /healthz
-                port: healthz
-              initialDelaySeconds: 10
-              timeoutSeconds: 3
-              periodSeconds: 2
-            securityContext:
-              capabilities:
-                drop:
-                - all
-                add: []
-              allowPrivilegeEscalation: true
-              readOnlyRootFilesystem: false
-              runAsNonRoot: false
-              privileged: true
         volumes:
           - name: powervc-config
             items:
@@ -473,38 +387,6 @@ objects:
             volumeMounts:
               - name: socket-dir
                 mountPath: /csi
-          - name: ibm-powervc-csi-provisioner
-            image: ${IMAGE_REPO}:${IMAGE_TAG}
-            imagePullPolicy: ${IMAGE_PROVISIONER_PULL}
-            args:
-              #- --provisioner=ibm-powervc-csi
-              - --csi-address=$(ADDRESS)
-              - --v=5
-              #- -prefix=powervc-csi
-            envFrom:
-              - configMapRef:
-                  name: ibm-powervc-config
-              - secretRef:
-                  name: ${OPENSTACK_CRED_SECRET_NAME}
-            env:
-              - name: OS_CACERT
-                value: /etc/config/openstack.crt
-              - name: ADDRESS
-                value: unix:///csi/csi.sock
-            volumeMounts:
-              - name: powervc-config
-                mountPath: /etc/config
-              - name: socket-dir
-                mountPath: /csi
-            securityContext:
-              capabilities:
-                drop:
-                - all
-                add: []
-              allowPrivilegeEscalation: true
-              readOnlyRootFilesystem: false
-              runAsNonRoot: false
-              privileged: true
         volumes:
           - name: powervc-config
             items:
