@@ -178,7 +178,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: csi-attacher
-            image: ibmcom/ibm-powervc-csi-attacher:1.0.0
+            image: k8s.gcr.io/sig-storage/csi-attacher:v3.0.1
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=$(ADDRESS)
@@ -191,7 +191,7 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe:1.0.0
+            image: k8s.gcr.io/sig-storage/livenessprobe:v2.1.0
             args:
               - --csi-address=/csi/csi.sock
             volumeMounts:
@@ -244,7 +244,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: csi-resizer
-            image: ibmcom/ibm-powervc-csi-resizer:1.0.0
+            image: us.gcr.io/k8s-artifacts-prod/sig-storage/csi-resizer:v1.0.0
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=$(ADDRESS)
@@ -256,7 +256,7 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe:1.0.0
+            image: k8s.gcr.io/sig-storage/livenessprobe:v2.1.0
             args:
               - --csi-address=/csi/csi.sock
             volumeMounts:
@@ -368,7 +368,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: csi-provisioner
-            image: ibmcom/ibm-powervc-csi-provisioner:1.0.0
+            image: k8s.gcr.io/sig-storage/csi-provisioner:v2.0.3
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=$(ADDRESS)
@@ -381,7 +381,7 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe:1.0.0
+            image: k8s.gcr.io/sig-storage/livenessprobe:v2.1.0
             args:
               - --csi-address=/csi/csi.sock
             volumeMounts:
@@ -465,7 +465,7 @@ objects:
           - name: ${QUAY_SECRET_NAME}
         containers:
           - name: node-driver-registrar
-            image: ibmcom/ibm-powervc-csi-node-driver-registrar:1.0.0
+            image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.0.1
             imagePullPolicy: "IfNotPresent"
             args:
               - --csi-address=/csi/csi.sock
@@ -489,7 +489,7 @@ objects:
               - name: socket-dir
                 mountPath: /csi
           - name: liveness-probe
-            image: ibmcom/ibm-powervc-csi-livenessprobe:1.0.0
+            image: k8s.gcr.io/sig-storage/livenessprobe:v2.1.0
             args:
               - --csi-address=/csi/csi.sock
               - --health-port=9808
