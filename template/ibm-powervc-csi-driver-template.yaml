@@ -648,7 +648,7 @@ parameters:
 - name: IMAGE_REPO
   displayName: "Provisioner image repository"
   description: "Name and location of the provisioner docker image repository."
-  value: "quay.io/pvccsi/ibm-powervc-csi-driver:1.0.0"
+  value: "quay.io/pvccsi/ibm-powervc-csi-driver"
   required: true
 - name: IMAGE_TAG
   displayName: "Provisioner image tag"
