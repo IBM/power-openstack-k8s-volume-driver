@@ -548,6 +548,8 @@ objects:
                 mountPath: /usr/sbin
               - name: bin-dir
                 mountPath: /usr/bin
+              - name: etc-dir
+                mountPath: /etc
               - name: ulib-dir
                 mountPath: /usr/lib64
             ports:
@@ -602,6 +604,10 @@ objects:
           - name: ulib-dir
             hostPath:
               path: /usr/lib64/
+              type: Directory
+          - name: etc-dir
+            hostPath:
+              path: /etc
               type: Directory
 - apiVersion: storage.k8s.io/v1
   kind: CSIDriver
