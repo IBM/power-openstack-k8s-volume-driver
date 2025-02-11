@@ -552,6 +552,8 @@ objects:
                 mountPath: /etc
               - name: ulib-dir
                 mountPath: /usr/lib64
+              - name: udevdb-dir
+                mountPath: /run/udev/data
             ports:
               - name: healthz
                 containerPort: 9808
@@ -608,6 +610,10 @@ objects:
           - name: etc-dir
             hostPath:
               path: /etc
+              type: Directory
+          - name: udevdb-dir
+            hostPath:
+              path: /run/udev/data
               type: Directory
 - apiVersion: storage.k8s.io/v1
   kind: CSIDriver
